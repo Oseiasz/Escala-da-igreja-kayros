@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { EyeIcon, EyeSlashIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, SpinnerIcon } from './icons';
 
 interface LoginViewProps {
   onLogin: (email: string, password: string, rememberMe: boolean) => Promise<boolean>;
@@ -26,6 +26,11 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
     setIsLoading(false);
   };
 
+  const inputBaseClasses = "w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none focus:outline-none sm:text-sm";
+  const inputErrorClasses = "border-red-500 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500";
+  const inputNormalClasses = "border-slate-300 focus:ring-indigo-500 focus:border-indigo-500";
+
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
@@ -50,8 +55,11 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError(null);
+                }}
+                className={`${inputBaseClasses} ${error ? inputErrorClasses : inputNormalClasses}`}
               />
             </div>
           </div>
@@ -68,8 +76,11 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError(null);
+                }}
+                className={`${inputBaseClasses} ${error ? inputErrorClasses : inputNormalClasses} pr-10`}
               />
               <button
                 type="button"
@@ -117,9 +128,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
             <button
               type="submit"
               disabled={isLoading}
-              className="relative flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md group hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
+              className="relative flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md group hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? <SpinnerIcon className="w-5 h-5" /> : 'Entrar'}
             </button>
           </div>
         </form>

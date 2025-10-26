@@ -94,6 +94,28 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const syncFromStorage = (e: StorageEvent) => {
+      if (e.key === 'churchMembers' && e.newValue) {
+        setAllMembers(JSON.parse(e.newValue));
+      }
+      if (e.key === 'churchUsers' && e.newValue) {
+        setUsers(JSON.parse(e.newValue));
+      }
+      if (e.key === 'churchSchedule' && e.newValue) {
+        setSchedule(JSON.parse(e.newValue));
+      }
+      if (e.key === 'churchAnnouncements' && e.newValue) {
+        setAnnouncements(e.newValue);
+      }
+    };
+
+    window.addEventListener('storage', syncFromStorage);
+    return () => {
+      window.removeEventListener('storage', syncFromStorage);
+    };
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem('churchSchedule', JSON.stringify(schedule));
   }, [schedule]);
 
@@ -181,7 +203,7 @@ const App: React.FC = () => {
         return { success: false, message: 'Este e-mail já está em uso.' };
     }
 
-    const newMemberId = `m${allMembers.length + 1}`;
+    const newMemberId = `m_${Date.now()}`;
     const newMember: Member = { id: newMemberId, name, email, phone: '', role: 'member' };
     const newUser: User = { email, password, memberId: newMemberId };
 
