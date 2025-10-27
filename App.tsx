@@ -50,6 +50,14 @@ const INITIAL_ANNOUNCEMENTS = `Bem-vindo ao nosso quadro de avisos!
 
 const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash || '#/');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+        return savedTheme;
+    }
+    // Default to user's system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
   const [schedule, setSchedule] = useState<Schedule>(() => {
     const savedSchedule = localStorage.getItem('churchSchedule');
     return savedSchedule ? JSON.parse(savedSchedule) : INITIAL_SCHEDULE;
@@ -73,6 +81,19 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgotPassword' | 'resetPassword'>('login');
   const [resetEmail, setResetEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
 
   useEffect(() => {
     localStorage.setItem('churchMembers', JSON.stringify(allMembers));
@@ -278,16 +299,55 @@ const App: React.FC = () => {
     );
   };
   
-  const handleUpdateAvatar = (memberId: string, avatarDataUrl: string) => {
+  const handleUpdateMember = (updatedMember: Member) => {
     setAllMembers(prevMembers =>
       prevMembers.map(member =>
-        member.id === memberId ? { ...member, avatar: avatarDataUrl } : member
+        member.id === updatedMember.id ? updatedMember : member
       )
     );
+    // FIX: Update schedule with new member details to prevent stale data
+    setSchedule(prevSchedule =>
+        prevSchedule.map(day => ({
+            ...day,
+            doorkeepers: day.doorkeepers.map(m => m.id === updatedMember.id ? updatedMember : m),
+            hymnSingers: day.hymnSingers.map(m => m.id === updatedMember.id ? updatedMember : m),
+        }))
+    );
+    if (currentUser?.id === updatedMember.id) {
+      setCurrentUser(prev => (prev ? { ...prev, ...updatedMember } : null));
+    }
+  };
+
+  const handleUpdateAvatar = (memberId: string, avatarDataUrl: string) => {
+    let updatedMemberWithAvatar: Member | null = null;
+    
+    setAllMembers(prevMembers =>
+      prevMembers.map(member => {
+        if (member.id === memberId) {
+            updatedMemberWithAvatar = { ...member, avatar: avatarDataUrl };
+            return updatedMemberWithAvatar;
+        }
+        return member;
+      })
+    );
+
+    // FIX: Propagate avatar change to the schedule to prevent stale data
+    if (updatedMemberWithAvatar) {
+        const finalUpdatedMember = updatedMemberWithAvatar;
+        setSchedule(prevSchedule =>
+            prevSchedule.map(day => ({
+                ...day,
+                doorkeepers: day.doorkeepers.map(m => m.id === memberId ? finalUpdatedMember : m),
+                hymnSingers: day.hymnSingers.map(m => m.id === memberId ? finalUpdatedMember : m),
+            }))
+        );
+    }
+    
     if (currentUser?.id === memberId) {
       setCurrentUser(prev => (prev ? { ...prev, avatar: avatarDataUrl } : null));
     }
   };
+
 
   if (!currentUser) {
     switch (authView) {
@@ -306,8 +366,16 @@ const App: React.FC = () => {
   const currentView = isAdmin && route === '#/admin' ? 'admin' : 'user';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
-      <Header isAdmin={isAdmin} view={currentView} schedule={schedule} currentUser={currentUser} onLogout={handleLogout} />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
+      <Header 
+        isAdmin={isAdmin} 
+        view={currentView} 
+        schedule={schedule} 
+        currentUser={currentUser} 
+        onLogout={handleLogout} 
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+      />
       <main className="p-4 sm:p-6 lg:p-8">
         {currentView === 'admin' ? (
           <AdminView
@@ -319,6 +387,7 @@ const App: React.FC = () => {
             onDeleteMember={handleDeleteMember}
             currentUser={currentUser}
             onToggleAdmin={handleToggleAdminStatus}
+            onUpdateMember={handleUpdateMember}
           />
         ) : (
           <UserView 
@@ -337,7 +406,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <footer className="text-center p-4 text-slate-500 text-sm">
+      <footer className="text-center p-4 text-slate-500 dark:text-slate-400 text-sm">
         <p>&copy; {new Date().getFullYear()} Ministério Local. Todos os direitos reservados.</p>
       </footer>
     </div>

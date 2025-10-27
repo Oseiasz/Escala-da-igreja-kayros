@@ -42,12 +42,12 @@ const PushNotificationManager: React.FC = () => {
     }
     
     if (isLoading) {
-        return <div className="p-4 bg-slate-100 rounded-lg text-center text-slate-500">Carregando...</div>;
+        return <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg text-center text-slate-500 dark:text-slate-400">Carregando...</div>;
     }
     
     if (!isSupported) {
         return (
-            <div className="p-4 bg-yellow-50 text-yellow-800 border-l-4 border-yellow-400 rounded-r-lg">
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 border-l-4 border-yellow-400 dark:border-yellow-500 rounded-r-lg">
                 <h4 className="font-bold">Navegador incompatível</h4>
                 <p className="text-sm">Seu navegador não suporta notificações push.</p>
             </div>
@@ -56,7 +56,7 @@ const PushNotificationManager: React.FC = () => {
 
     if (permission === 'denied') {
         return (
-             <div className="p-4 bg-red-50 text-red-800 border-l-4 border-red-400 rounded-r-lg">
+             <div className="p-4 bg-red-50 dark:bg-red-900/50 text-red-800 dark:text-red-200 border-l-4 border-red-400 dark:border-red-500 rounded-r-lg">
                 <h4 className="font-bold">Permissão Negada</h4>
                 <p className="text-sm">Você bloqueou as notificações. Para reativá-las, altere as configurações do seu navegador.</p>
             </div>
@@ -65,14 +65,14 @@ const PushNotificationManager: React.FC = () => {
     
     if (isEnabled) {
         return (
-            <div className="p-4 bg-green-50 text-green-800 border-l-4 border-green-400 rounded-r-lg flex items-center justify-between">
+            <div className="p-4 bg-green-50 dark:bg-green-900/50 text-green-800 dark:text-green-200 border-l-4 border-green-400 dark:border-green-500 rounded-r-lg flex items-center justify-between">
                 <div>
                     <h4 className="font-bold">Notificações Ativadas</h4>
                     <p className="text-sm">Você receberá lembretes sobre suas tarefas.</p>
                 </div>
                 <button 
                     onClick={disable}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-700 font-semibold rounded-lg shadow-sm hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 transition-colors"
                 >
                     <BellSlashIcon className="w-5 h-5" />
                     Desativar
@@ -82,10 +82,10 @@ const PushNotificationManager: React.FC = () => {
     }
 
     return (
-        <div className="p-4 bg-slate-100 rounded-lg flex items-center justify-between">
+        <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg flex items-center justify-between">
             <div>
-                <h4 className="font-bold">Lembretes de Tarefas</h4>
-                <p className="text-sm text-slate-600">Receba notificações sobre suas escalas no dia anterior.</p>
+                <h4 className="font-bold dark:text-slate-100">Lembretes de Tarefas</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Receba notificações sobre suas escalas no dia anterior.</p>
             </div>
             <button
                 onClick={requestPermissionAndEnable}

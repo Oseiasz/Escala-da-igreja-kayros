@@ -29,19 +29,19 @@ const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSubmit, onSwi
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
+    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
         <div>
-          <h2 className="text-3xl font-extrabold text-center text-slate-900">
+          <h2 className="text-3xl font-extrabold text-center text-slate-900 dark:text-slate-100">
             Redefinir Senha
           </h2>
-          <p className="mt-2 text-sm text-center text-slate-600">
+          <p className="mt-2 text-sm text-center text-slate-600 dark:text-slate-400">
             Digite seu e-mail para receber as instruções.
           </p>
         </div>
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email-forgot" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="email-forgot" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Endereço de e-mail
             </label>
             <div className="mt-1">
@@ -53,7 +53,7 @@ const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSubmit, onSwi
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
               />
             </div>
           </div>
@@ -80,12 +80,12 @@ const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSubmit, onSwi
             </button>
           </div>
         </form>
-        <p className="mt-6 text-sm text-center text-slate-600">
+        <p className="mt-6 text-sm text-center text-slate-600 dark:text-slate-400">
             Lembrou da senha?{' '}
             <button
                 type="button"
                 onClick={onSwitchToLogin}
-                className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus:underline"
             >
                 Voltar para o login
             </button>

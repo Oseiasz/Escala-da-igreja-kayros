@@ -27,24 +27,24 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
   };
 
   const inputBaseClasses = "w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none focus:outline-none sm:text-sm";
-  const inputErrorClasses = "border-red-500 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500";
-  const inputNormalClasses = "border-slate-300 focus:ring-indigo-500 focus:border-indigo-500";
+  const inputErrorClasses = "border-red-500 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 dark:bg-red-900/20";
+  const inputNormalClasses = "border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white";
 
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
+    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
         <div>
-          <h2 className="text-3xl font-extrabold text-center text-slate-900">
+          <h2 className="text-3xl font-extrabold text-center text-slate-900 dark:text-slate-100">
             Acessar Escala
           </h2>
-          <p className="mt-2 text-sm text-center text-slate-600">
+          <p className="mt-2 text-sm text-center text-slate-600 dark:text-slate-400">
             Faça login para visualizar a escala de trabalho.
           </p>
         </div>
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Endereço de e-mail
             </label>
             <div className="mt-1">
@@ -65,7 +65,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
           </div>
 
           <div>
-            <label htmlFor="password"className="block text-sm font-medium text-slate-700">
+            <label htmlFor="password"className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Senha
             </label>
             <div className="relative mt-1">
@@ -103,7 +103,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                 />
-                <label htmlFor="remember-me" className="block ml-2 text-sm text-slate-900">
+                <label htmlFor="remember-me" className="block ml-2 text-sm text-slate-900 dark:text-slate-200">
                     Lembrar de mim
                 </label>
             </div>
@@ -111,7 +111,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
                 <button
                     type="button"
                     onClick={onForgotPassword}
-                    className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline"
+                    className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus:underline"
                 >
                     Esqueceu sua senha?
                 </button>
@@ -134,12 +134,12 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
             </button>
           </div>
         </form>
-         <p className="mt-6 text-sm text-center text-slate-600">
+         <p className="mt-6 text-sm text-center text-slate-600 dark:text-slate-400">
             Não tem uma conta?{' '}
             <button
                 type="button"
                 onClick={onSwitchToSignUp}
-                className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus:underline"
             >
                 Crie uma aqui
             </button>

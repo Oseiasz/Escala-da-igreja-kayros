@@ -56,31 +56,33 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
     setIsLoading(false);
   };
 
+  const inputClasses = "w-full px-3 py-2 pr-10 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white";
+
   if (success) {
     return (
-       <div className="flex items-center justify-center min-h-screen bg-slate-100">
-         <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg text-center">
-            <h2 className="text-2xl font-bold text-slate-900">Senha Redefinida!</h2>
-            <p className="text-slate-600">Sua senha foi atualizada com sucesso. Você será redirecionado para a tela de login.</p>
+       <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
+         <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Senha Redefinida!</h2>
+            <p className="text-slate-600 dark:text-slate-300">Sua senha foi atualizada com sucesso. Você será redirecionado para a tela de login.</p>
          </div>
        </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
+    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
         <div>
-          <h2 className="text-3xl font-extrabold text-center text-slate-900">
+          <h2 className="text-3xl font-extrabold text-center text-slate-900 dark:text-slate-100">
             Crie uma Nova Senha
           </h2>
-          <p className="mt-2 text-sm text-center text-slate-600">
+          <p className="mt-2 text-sm text-center text-slate-600 dark:text-slate-400">
             Redefinindo senha para <span className="font-medium">{email}</span>.
           </p>
         </div>
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="new-password"className="block text-sm font-medium text-slate-700">
+            <label htmlFor="new-password"className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Nova Senha
             </label>
             <div className="relative mt-1">
@@ -92,7 +94,7 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={inputClasses}
               />
                <button
                 type="button"
@@ -105,7 +107,7 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
             </div>
           </div>
           <div>
-            <label htmlFor="confirm-password"className="block text-sm font-medium text-slate-700">
+            <label htmlFor="confirm-password"className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Confirmar Nova Senha
             </label>
             <div className="relative mt-1">
@@ -117,7 +119,7 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={inputClasses}
               />
               <button
                 type="button"

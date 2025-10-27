@@ -1,7 +1,5 @@
 {
   "name": "Escala de Trabalho da Igreja",
   "description": "Um aplicativo web para gerenciar e visualizar a escala de trabalho dos membros da igreja, incluindo porteiros e cantores de hinos. Administradores podem editar a escala, postar avisos e exportar a programação em PDF.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "requestFramePermissions": []
 }

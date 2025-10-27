@@ -4,7 +4,10 @@ import App from './App';
 
 // Registra o Service Worker para notificações push
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js')
+  // FIX: Use an absolute URL for the service worker to avoid cross-origin issues.
+  // The execution environment sometimes resolves relative paths incorrectly.
+  const swUrl = `${window.location.origin}/sw.js`;
+  navigator.serviceWorker.register(swUrl)
     .then(registration => {
       console.log('Service Worker registrado com sucesso:', registration.scope);
     })

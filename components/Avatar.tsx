@@ -18,14 +18,14 @@ interface AvatarProps {
 const Avatar: React.FC<AvatarProps> = ({ member, className = 'w-10 h-10' }) => {
   if (!member) {
     return (
-      <div className={`${className} bg-slate-200 rounded-full flex items-center justify-center`}>
-        <UserIcon className="w-1/2 h-1/2 text-slate-400" />
+      <div className={`${className} bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center`}>
+        <UserIcon className="w-1/2 h-1/2 text-slate-400 dark:text-slate-500" />
       </div>
     );
   }
 
   if (member.avatar) {
-    return <img src={member.avatar} alt={member.name} className={`${className} rounded-full object-cover bg-slate-200`} />;
+    return <img src={member.avatar} alt={member.name} className={`${className} rounded-full object-cover bg-slate-200 dark:bg-slate-700`} />;
   }
 
   const initials = getInitials(member.name);

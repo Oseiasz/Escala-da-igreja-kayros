@@ -42,20 +42,22 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onSignUp, onSwitchToLogin }) =>
     setIsLoading(false);
   };
 
+  const inputClasses = "w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400";
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
+    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
         <div>
-          <h2 className="text-3xl font-extrabold text-center text-slate-900">
+          <h2 className="text-3xl font-extrabold text-center text-slate-900 dark:text-slate-100">
             Criar Nova Conta
           </h2>
-          <p className="mt-2 text-sm text-center text-slate-600">
+          <p className="mt-2 text-sm text-center text-slate-600 dark:text-slate-400">
             Junte-se a nós preenchendo o formulário abaixo.
           </p>
         </div>
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Nome Completo
             </label>
             <div className="mt-1">
@@ -67,13 +69,13 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onSignUp, onSwitchToLogin }) =>
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={inputClasses}
               />
             </div>
           </div>
           
           <div>
-            <label htmlFor="email-signup" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="email-signup" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Endereço de e-mail
             </label>
             <div className="mt-1">
@@ -85,13 +87,13 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onSignUp, onSwitchToLogin }) =>
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={inputClasses}
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="password-signup" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="password-signup" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Senha
             </label>
             <div className="relative mt-1">
@@ -103,7 +105,7 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onSignUp, onSwitchToLogin }) =>
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 placeholder-slate-400 border rounded-md shadow-sm appearance-none border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={`${inputClasses} pr-10`}
               />
                <button
                 type="button"
@@ -132,12 +134,12 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onSignUp, onSwitchToLogin }) =>
             </button>
           </div>
         </form>
-        <p className="mt-6 text-sm text-center text-slate-600">
+        <p className="mt-6 text-sm text-center text-slate-600 dark:text-slate-400">
             Já tem uma conta?{' '}
             <button
                 type="button"
                 onClick={onSwitchToLogin}
-                className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus:underline"
             >
                 Faça login aqui
             </button>

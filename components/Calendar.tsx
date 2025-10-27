@@ -71,19 +71,19 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
-                <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-slate-100" aria-label="Mês anterior">
-                    <ChevronLeftIcon className="w-6 h-6 text-slate-500" />
+                <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" aria-label="Mês anterior">
+                    <ChevronLeftIcon className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                 </button>
-                <h2 className="text-xl font-bold text-slate-700 capitalize">
+                <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 capitalize">
                     {viewDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                 </h2>
-                <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-slate-100" aria-label="Próximo mês">
-                    <ChevronRightIcon className="w-6 h-6 text-slate-500" />
+                <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" aria-label="Próximo mês">
+                    <ChevronRightIcon className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                 </button>
             </div>
-            <div className="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-7 gap-px bg-slate-200 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                 {WEEKDAY_NAMES.map(day => (
-                    <div key={day} className="text-center text-xs font-bold text-slate-500 py-2 bg-slate-50">
+                    <div key={day} className="text-center text-xs font-bold text-slate-500 dark:text-slate-400 py-2 bg-slate-50 dark:bg-slate-800">
                         {day}
                     </div>
                 ))}
@@ -93,12 +93,12 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
                     const hasActiveEvent = daySchedule?.active === true;
                     
                     const cellClasses = `p-2 min-h-[100px] transition-colors duration-200 relative
-                        ${isCurrentMonth ? 'bg-white' : 'bg-slate-50 text-slate-400'}
-                        ${hasActiveEvent && isCurrentMonth ? 'cursor-pointer hover:bg-indigo-50' : ''}
+                        ${isCurrentMonth ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500'}
+                        ${hasActiveEvent && isCurrentMonth ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/30' : ''}
                     `;
                     const dateClasses = `flex items-center justify-center w-7 h-7 rounded-full text-sm
                         ${isToday ? 'bg-indigo-500 text-white font-bold' : ''}
-                        ${!isToday && hasActiveEvent ? 'font-semibold text-indigo-700' : ''}
+                        ${!isToday && hasActiveEvent ? 'font-semibold text-indigo-700 dark:text-indigo-400' : ''}
                     `;
 
                     return (
@@ -108,7 +108,7 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
                             </div>
                             {isCurrentMonth && hasActiveEvent && (
                                 <div className="mt-1 text-center">
-                                     <p className="text-xs font-semibold text-indigo-800 truncate">{daySchedule?.event}</p>
+                                     <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-300 truncate">{daySchedule?.event}</p>
                                      <div className="flex justify-center mt-1.5 gap-1">
                                          {daySchedule?.doorkeepers.length > 0 && <div className="w-1.5 h-1.5 bg-blue-400 rounded-full" title="Porteiros"></div>}
                                          {daySchedule?.hymnSingers.length > 0 && <div className="w-1.5 h-1.5 bg-green-400 rounded-full" title="Cantores"></div>}
@@ -116,7 +116,7 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
                                 </div>
                             )}
                             {isAdmin && isCurrentMonth && hasActiveEvent && (
-                                <button className="absolute bottom-1 right-1 p-1 text-slate-400 hover:text-indigo-600" onClick={(e) => { e.stopPropagation(); onDateClick(date, daySchedule);}}>
+                                <button className="absolute bottom-1 right-1 p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400" onClick={(e) => { e.stopPropagation(); onDateClick(date, daySchedule);}}>
                                     <EditIcon className="w-4 h-4" />
                                 </button>
                             )}
