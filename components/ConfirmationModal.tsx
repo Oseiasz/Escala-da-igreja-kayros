@@ -6,9 +6,19 @@ interface ConfirmationModalProps {
   onConfirm: () => void;
   title: string;
   message: React.ReactNode;
+  confirmButtonText?: string;
+  confirmButtonClass?: string;
 }
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onConfirm, 
+    title, 
+    message,
+    confirmButtonText = 'Confirmar',
+    confirmButtonClass = 'bg-red-600 hover:bg-red-700 focus:ring-red-500' 
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -24,9 +34,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
           <button
             onClick={onConfirm}
             type="button"
-            className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
+            className={`inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:text-sm ${confirmButtonClass}`}
           >
-            Confirmar
+            {confirmButtonText}
           </button>
           <button
             onClick={onClose}

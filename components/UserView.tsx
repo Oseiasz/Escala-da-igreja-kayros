@@ -1,32 +1,47 @@
-
 import React, { useState } from 'react';
-import { Schedule, Member, ScheduleDay } from '../types';
-import ProfileModal from './ProfileModal';
+import { Schedule, Member, ScheduleDay, ScheduleParticipant } from '../types';
 import Avatar from './Avatar';
 import PushNotificationManager from './PushNotificationManager';
+import { PdfIcon, UserIcon } from './icons';
+import { exportScheduleToPDF } from '../services/pdfService';
+import SchedulePDFView from './SchedulePDFView';
+import ConfirmationModal from './ConfirmationModal';
 
 interface UserViewProps {
   schedule: Schedule;
   announcements: string;
   currentUser: Member | null;
   onUpdateAvatar: (memberId: string, avatarDataUrl: string) => void;
+  onMemberClick: (member: Member) => void;
+  scheduleName: string;
 }
 
-const MemberList: React.FC<{ members: Member[]; onMemberClick: (member: Member) => void }> = ({ members, onMemberClick }) => {
+const MemberList: React.FC<{ members: ScheduleParticipant[]; onMemberClick: (member: Member) => void }> = ({ members, onMemberClick }) => {
     if (members.length === 0) {
         return <p className="text-sm text-slate-500 dark:text-slate-400 italic">Ninguém escalado.</p>;
     }
     return (
         <ul className="space-y-2">
-            {members.map(member => (
-                <li key={member.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                    <Avatar member={member} className="w-6 h-6"/>
-                    <button 
-                        onClick={() => onMemberClick(member)}
-                        className="hover:underline hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none rounded"
-                    >
-                        {member.name}
-                    </button>
+            {members.map(participant => (
+                <li key={participant.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                    {participant.isRegistered && participant.memberData ? (
+                        <>
+                            <Avatar member={participant.memberData} className="w-6 h-6"/>
+                            <button 
+                                onClick={() => onMemberClick(participant.memberData!)}
+                                className="hover:underline hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none rounded"
+                            >
+                                {participant.name}
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <div className="w-6 h-6 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                                <UserIcon className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                            </div>
+                            <span>{participant.name}</span>
+                        </>
+                    )}
                 </li>
             ))}
         </ul>
@@ -57,33 +72,62 @@ const ScheduleCard: React.FC<{ day: ScheduleDay, onMemberClick: (member: Member)
     );
 };
 
-const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUser, onUpdateAvatar }) => {
-  const [viewingProfile, setViewingProfile] = useState<Member | null>(null);
+const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUser, onUpdateAvatar, onMemberClick, scheduleName }) => {
+  const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const [isPdfConfirmOpen, setIsPdfConfirmOpen] = useState(false);
 
-  const handleMemberClick = (member: Member) => {
-    setViewingProfile(member);
+  const handleSavePdf = async () => {
+      setIsSavingPdf(true);
+      try {
+          const safeName = scheduleName.replace(/\s+/g, '_') || 'semanal';
+          await exportScheduleToPDF('schedule-to-print-user-offscreen', `escala_${safeName}.pdf`);
+      } catch (error) {
+          console.error("Failed to generate PDF", error);
+      } finally {
+          setIsSavingPdf(false);
+      }
   };
-  
-  const handleCloseProfile = () => {
-    setViewingProfile(null);
+
+  const handleConfirmPdfExport = () => {
+    setIsPdfConfirmOpen(false);
+    handleSavePdf();
   };
 
   return (
     <>
-        <ProfileModal 
-            member={viewingProfile}
-            schedule={schedule}
-            onClose={handleCloseProfile}
-            currentUser={currentUser}
-            onUpdateAvatar={onUpdateAvatar}
+        <ConfirmationModal
+            isOpen={isPdfConfirmOpen}
+            onClose={() => setIsPdfConfirmOpen(false)}
+            onConfirm={handleConfirmPdfExport}
+            title="Confirmar Exportação para PDF"
+            message="Você tem certeza que deseja exportar a escala para PDF?"
+            confirmButtonText="Sim, Exportar"
+            confirmButtonClass="bg-green-600 hover:bg-green-700 focus:ring-green-500"
         />
 
+        {/* Hidden container for PDF generation */}
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -1 }} aria-hidden="true">
+            <div id="schedule-to-print-user-offscreen">
+                <SchedulePDFView schedule={schedule} announcements={announcements} scheduleName={scheduleName} />
+            </div>
+        </div>
+
         <div className="space-y-6 sm:space-y-8">
-            <div id="schedule-to-print-user" className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
-                 <h2 className="text-xl sm:text-2xl font-bold text-center text-slate-700 dark:text-slate-200 mb-6">Escala da Semana</h2>
+            <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
+                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-200 sm:text-left text-center">Escala da Semana</h2>
+                    <button
+                        onClick={() => setIsPdfConfirmOpen(true)}
+                        disabled={isSavingPdf}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400"
+                    >
+                        <PdfIcon className="w-5 h-5"/>
+                        {isSavingPdf ? 'Salvando...' : 'Salvar como PDF'}
+                    </button>
+                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {schedule.map(day => (
-                        <ScheduleCard key={day.id} day={day} onMemberClick={handleMemberClick} />
+                        <ScheduleCard key={day.id} day={day} onMemberClick={onMemberClick} />
                     ))}
                  </div>
             </div>

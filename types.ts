@@ -13,13 +13,28 @@ export interface User {
   memberId: string;
 }
 
+export interface ScheduleParticipant {
+  id: string; // member.id for registered, unique string for unregistered
+  name: string;
+  isRegistered: boolean;
+  memberData?: Member; // Contains full member object if registered
+}
+
+
 export interface ScheduleDay {
   id: string;
   dayName: string;
   event: string;
-  doorkeepers: Member[];
-  hymnSingers: Member[];
+  doorkeepers: ScheduleParticipant[];
+  hymnSingers: ScheduleParticipant[];
   active: boolean;
 }
 
 export type Schedule = ScheduleDay[];
+
+export interface ScheduleGroup {
+  id: string;
+  name: string;
+  schedule: Schedule;
+  announcements: string;
+}

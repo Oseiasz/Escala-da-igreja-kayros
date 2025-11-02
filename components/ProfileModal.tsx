@@ -25,12 +25,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
         roles.add('Administrador');
     }
 
-    const isDoorkeeper = schedule.some(day => day.active && day.doorkeepers.some(m => m.id === member.id));
+    const isDoorkeeper = schedule.some(day => day.active && day.doorkeepers.some(p => p.id === member.id));
     if (isDoorkeeper) {
         roles.add('Porteiro(a)');
     }
 
-    const isHymnSinger = schedule.some(day => day.active && day.hymnSingers.some(m => m.id === member.id));
+    const isHymnSinger = schedule.some(day => day.active && day.hymnSingers.some(p => p.id === member.id));
     if (isHymnSinger) {
         roles.add('Cantor(a)');
     }
@@ -50,20 +50,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
 
     const todaySchedule = schedule.find(day => day.dayName === dayNames[today.getDay()]);
     if (todaySchedule?.active) {
-        if (todaySchedule.doorkeepers.some(m => m.id === member.id)) {
+        if (todaySchedule.doorkeepers.some(p => p.id === member.id)) {
             tasks.push({ dayLabel: 'Hoje', event: todaySchedule.event, role: 'Porteiro(a)' });
         }
-        if (todaySchedule.hymnSingers.some(m => m.id === member.id)) {
+        if (todaySchedule.hymnSingers.some(p => p.id === member.id)) {
             tasks.push({ dayLabel: 'Hoje', event: todaySchedule.event, role: 'Cantor(a) (Harpa)' });
         }
     }
 
     const tomorrowSchedule = schedule.find(day => day.dayName === dayNames[tomorrow.getDay()]);
     if (tomorrowSchedule?.active) {
-        if (tomorrowSchedule.doorkeepers.some(m => m.id === member.id)) {
+        if (tomorrowSchedule.doorkeepers.some(p => p.id === member.id)) {
             tasks.push({ dayLabel: 'Amanhã', event: tomorrowSchedule.event, role: 'Porteiro(a)' });
         }
-        if (tomorrowSchedule.hymnSingers.some(m => m.id === member.id)) {
+        if (tomorrowSchedule.hymnSingers.some(p => p.id === member.id)) {
             tasks.push({ dayLabel: 'Amanhã', event: tomorrowSchedule.event, role: 'Cantor(a) (Harpa)' });
         }
     }
@@ -75,10 +75,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
     const tasks: { dayName: string, role: string }[] = [];
     schedule.forEach(day => {
         if (day.active) {
-            if (day.doorkeepers.some(m => m.id === member.id)) {
+            if (day.doorkeepers.some(p => p.id === member.id)) {
                 tasks.push({ dayName: day.dayName, role: 'Porteiro(a)' });
             }
-            if (day.hymnSingers.some(m => m.id === member.id)) {
+            if (day.hymnSingers.some(p => p.id === member.id)) {
                 tasks.push({ dayName: day.dayName, role: 'Cantor(a) (Harpa)' });
             }
         }

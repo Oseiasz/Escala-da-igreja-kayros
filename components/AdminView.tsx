@@ -1,23 +1,28 @@
-
-import React, { useState, useCallback, useEffect } from 'react';
-import { Schedule, ScheduleDay, Member } from '../types';
-import { PdfIcon, EditIcon, TrashIcon, AdminIcon, PhoneIcon, CheckIcon, CloseIcon } from './icons';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { Schedule, ScheduleDay, Member, ScheduleGroup, ScheduleParticipant } from '../types';
+import { PdfIcon, EditIcon, TrashIcon, AdminIcon, PhoneIcon, CheckIcon, CloseIcon, UserIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import MultiSelect from './MultiSelect';
 import ConfirmationModal from './ConfirmationModal';
 import Avatar from './Avatar';
 import { sendNewAssignmentNotificationToAdmins } from '../services/emailService';
+import SchedulePDFView from './SchedulePDFView';
 
 interface AdminViewProps {
   schedule: Schedule;
-  setSchedule: React.Dispatch<React.SetStateAction<Schedule>>;
+  onUpdateSchedule: (newSchedule: Schedule) => void;
   announcements: string;
-  setAnnouncements: React.Dispatch<React.SetStateAction<string>>;
+  onUpdateAnnouncements: (newAnnouncements: string) => void;
   allMembers: Member[];
   onDeleteMember: (memberId: string) => void;
   currentUser: Member;
   onToggleAdmin: (memberId: string) => void;
   onUpdateMember: (member: Member) => void;
+  scheduleGroups: ScheduleGroup[];
+  activeScheduleGroupId: string;
+  onAddScheduleGroup: (name: string) => void;
+  onDeleteScheduleGroup: (id: string) => void;
+  onUpdateScheduleGroupName: (id: string, newName: string) => void;
 }
 
 interface EditModalProps {
@@ -31,7 +36,6 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
   const [editedDay, setEditedDay] = useState<ScheduleDay | null>(null);
 
   useEffect(() => {
-    // When the modal is opened with a new day, update our internal state
     if (day) {
       setEditedDay({ ...day });
     } else {
@@ -90,14 +94,14 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
                         allOptions={allMembers}
                         selectedOptions={editedDay.doorkeepers}
                         onChange={(newSelection) => setEditedDay(prev => prev ? { ...prev, doorkeepers: newSelection } : null)}
-                        placeholder="Buscar porteiros..."
+                        placeholder="Buscar ou adicionar porteiros..."
                     />
                     <MultiSelect
                         label="Cantores (Harpa)"
                         allOptions={allMembers}
                         selectedOptions={editedDay.hymnSingers}
                         onChange={(newSelection) => setEditedDay(prev => prev ? { ...prev, hymnSingers: newSelection } : null)}
-                        placeholder="Buscar cantores..."
+                        placeholder="Buscar ou adicionar cantores..."
                     />
                 </div>
             )}
@@ -116,16 +120,22 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
   );
 };
 
-const AdminMemberList: React.FC<{ members: Member[] }> = ({ members }) => {
+const AdminMemberList: React.FC<{ members: ScheduleParticipant[] }> = ({ members }) => {
     if (members.length === 0) {
         return <p className="text-sm text-slate-500 dark:text-slate-400 italic">Ninguém escalado.</p>;
     }
     return (
         <ul className="space-y-2">
-            {members.map(member => (
-                <li key={member.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                    <Avatar member={member} className="w-5 h-5"/>
-                    <span>{member.name}</span>
+            {members.map(participant => (
+                <li key={participant.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                     {participant.isRegistered && participant.memberData ? (
+                        <Avatar member={participant.memberData} className="w-5 h-5"/>
+                    ) : (
+                        <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                            <UserIcon className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                        </div>
+                    )}
+                    <span>{participant.name}</span>
                 </li>
             ))}
         </ul>
@@ -163,58 +173,83 @@ const AdminScheduleCard: React.FC<{ day: ScheduleDay, onEdit: (day: ScheduleDay)
 };
 
 
-const AdminView: React.FC<AdminViewProps> = ({ schedule, setSchedule, announcements, setAnnouncements, allMembers, onDeleteMember, currentUser, onToggleAdmin, onUpdateMember }) => {
+const AdminView: React.FC<AdminViewProps> = ({ 
+    schedule, onUpdateSchedule, announcements, onUpdateAnnouncements, allMembers, 
+    onDeleteMember, currentUser, onToggleAdmin, onUpdateMember,
+    scheduleGroups, activeScheduleGroupId, onAddScheduleGroup, onDeleteScheduleGroup, onUpdateScheduleGroupName
+}) => {
     const [editingDay, setEditingDay] = useState<ScheduleDay | null>(null);
     const [isSavingPdf, setIsSavingPdf] = useState(false);
+    const [isPdfConfirmOpen, setIsPdfConfirmOpen] = useState(false);
     const [deletingMember, setDeletingMember] = useState<Member | null>(null);
     const [togglingAdminFor, setTogglingAdminFor] = useState<Member | null>(null);
     const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
     const [editedName, setEditedName] = useState('');
     const [editedPhone, setEditedPhone] = useState('');
+    const [modalAction, setModalAction] = useState<'create' | 'rename' | null>(null);
+    const [modalInputValue, setModalInputValue] = useState('');
+    const [deletingSchedule, setDeletingSchedule] = useState<ScheduleGroup | null>(null);
+    
+    const activeScheduleGroup = useMemo(() => 
+        scheduleGroups.find(g => g.id === activeScheduleGroupId),
+    [scheduleGroups, activeScheduleGroupId]);
 
     const handleSaveDay = useCallback((updatedDay: ScheduleDay) => {
         const originalDay = schedule.find(d => d.id === updatedDay.id);
-        const newAssignments: { member: Member, day: ScheduleDay, role: string }[] = [];
+        const newAssignments: { member: ScheduleParticipant, day: ScheduleDay, role: string }[] = [];
 
         if (originalDay) {
-            // Find newly added doorkeepers
-            const originalDoorkeeperIds = new Set(originalDay.doorkeepers.map(m => m.id));
+            const originalDoorkeeperIds = new Set(originalDay.doorkeepers.map(p => p.id));
             updatedDay.doorkeepers
-                .filter(m => !originalDoorkeeperIds.has(m.id))
-                .forEach(member => {
-                    newAssignments.push({ member, day: updatedDay, role: 'Porteiro(a)' });
+                .filter(p => !originalDoorkeeperIds.has(p.id))
+                .forEach(participant => {
+                    newAssignments.push({ member: participant, day: updatedDay, role: 'Porteiro(a)' });
                 });
 
-            // Find newly added hymn singers
-            const originalSingerIds = new Set(originalDay.hymnSingers.map(m => m.id));
+            const originalSingerIds = new Set(originalDay.hymnSingers.map(p => p.id));
             updatedDay.hymnSingers
-                .filter(m => !originalSingerIds.has(m.id))
-                .forEach(member => {
-                    newAssignments.push({ member, day: updatedDay, role: 'Cantor(a) (Harpa)' });
+                .filter(p => !originalSingerIds.has(p.id))
+                .forEach(participant => {
+                    newAssignments.push({ member: participant, day: updatedDay, role: 'Cantor(a) (Harpa)' });
                 });
         }
 
-        // If there are new assignments, notify admins
         if (newAssignments.length > 0) {
             const admins = allMembers.filter(m => m.role === 'admin');
-            sendNewAssignmentNotificationToAdmins(admins, newAssignments);
+            const registeredNewAssignments = newAssignments
+                .filter(a => a.member.isRegistered && a.member.memberData)
+                .map(a => ({
+                    member: a.member.memberData!,
+                    day: a.day,
+                    role: a.role
+                }));
+
+            if (registeredNewAssignments.length > 0) {
+                sendNewAssignmentNotificationToAdmins(admins, registeredNewAssignments);
+            }
         }
         
-        setSchedule(prevSchedule => 
+        onUpdateSchedule(prevSchedule => 
             prevSchedule.map(day => day.id === updatedDay.id ? updatedDay : day)
         );
         setEditingDay(null);
-    }, [schedule, setSchedule, allMembers]);
+    }, [schedule, onUpdateSchedule, allMembers]);
     
     const handleSavePdf = async () => {
         setIsSavingPdf(true);
         try {
-            await exportScheduleToPDF('schedule-to-print-admin', `escala_semanal.pdf`);
+            const safeName = activeScheduleGroup?.name.replace(/\s+/g, '_') || 'semanal';
+            await exportScheduleToPDF('schedule-to-print-admin-offscreen', `escala_${safeName}.pdf`);
         } catch (error) {
             console.error("Failed to generate PDF", error);
         } finally {
             setIsSavingPdf(false);
         }
+    };
+    
+    const handleConfirmPdfExport = () => {
+        setIsPdfConfirmOpen(false);
+        handleSavePdf();
     };
 
     const confirmDeleteMember = () => {
@@ -231,19 +266,19 @@ const AdminView: React.FC<AdminViewProps> = ({ schedule, setSchedule, announceme
         }
     };
     
-    const handleStartEdit = (member: Member) => {
+    const handleStartEditMember = (member: Member) => {
         setEditingMemberId(member.id);
         setEditedName(member.name);
         setEditedPhone(member.phone || '');
     };
 
-    const handleCancelEdit = () => {
+    const handleCancelEditMember = () => {
         setEditingMemberId(null);
         setEditedName('');
         setEditedPhone('');
     };
 
-    const handleSaveEdit = () => {
+    const handleSaveEditMember = () => {
         if (!editingMemberId) return;
 
         const originalMember = allMembers.find(m => m.id === editingMemberId);
@@ -254,7 +289,35 @@ const AdminView: React.FC<AdminViewProps> = ({ schedule, setSchedule, announceme
                 phone: editedPhone.trim(),
             });
         }
-        handleCancelEdit(); // Reset state
+        handleCancelEditMember();
+    };
+    
+    const handleStartCreate = () => {
+        setModalInputValue('');
+        setModalAction('create');
+    };
+
+    const handleStartRename = () => {
+        setModalInputValue(activeScheduleGroup?.name || '');
+        setModalAction('rename');
+    };
+    
+    const handleModalConfirm = () => {
+        if (!modalInputValue.trim()) return;
+        if (modalAction === 'create') {
+            onAddScheduleGroup(modalInputValue.trim());
+        } else if (modalAction === 'rename' && activeScheduleGroupId) {
+            onUpdateScheduleGroupName(activeScheduleGroupId, modalInputValue.trim());
+        }
+        setModalAction(null);
+        setModalInputValue('');
+    };
+
+    const confirmDeleteSchedule = () => {
+        if (deletingSchedule) {
+            onDeleteScheduleGroup(deletingSchedule.id);
+            setDeletingSchedule(null);
+        }
     };
 
     return (
@@ -262,18 +325,21 @@ const AdminView: React.FC<AdminViewProps> = ({ schedule, setSchedule, announceme
         {editingDay && <EditScheduleModal day={editingDay} allMembers={allMembers} onClose={() => setEditingDay(null)} onSave={handleSaveDay} />}
         
         <ConfirmationModal
+            isOpen={isPdfConfirmOpen}
+            onClose={() => setIsPdfConfirmOpen(false)}
+            onConfirm={handleConfirmPdfExport}
+            title="Confirmar Exportação para PDF"
+            message="Você tem certeza que deseja exportar a escala para PDF?"
+            confirmButtonText="Sim, Exportar"
+            confirmButtonClass="bg-green-600 hover:bg-green-700 focus:ring-green-500"
+        />
+
+        <ConfirmationModal
             isOpen={!!deletingMember}
             onClose={() => setDeletingMember(null)}
             onConfirm={confirmDeleteMember}
             title="Confirmar Exclusão de Membro"
-            message={
-                <>
-                    <p>Você tem certeza que deseja excluir <strong>{deletingMember?.name}</strong>?</p>
-                    <p className="mt-2 text-sm text-red-600">
-                        Esta ação é irreversível. O membro será removido de todas as escalas e sua conta de usuário será permanentemente deletada.
-                    </p>
-                </>
-            }
+            message={<><p>Excluir <strong>{deletingMember?.name}</strong>?</p><p className="mt-2 text-sm text-red-600">Esta ação é irreversível.</p></>}
         />
         
         <ConfirmationModal
@@ -281,30 +347,62 @@ const AdminView: React.FC<AdminViewProps> = ({ schedule, setSchedule, announceme
             onClose={() => setTogglingAdminFor(null)}
             onConfirm={confirmToggleAdmin}
             title="Confirmar Alteração de Cargo"
-            message={
-                togglingAdminFor?.role === 'admin' ? (
-                <>
-                    <p>Você tem certeza que deseja remover os privilégios de administrador de <strong>{togglingAdminFor?.name}</strong>?</p>
-                    <p className="mt-2 text-sm text-yellow-700">
-                    Ele(a) perderá o acesso ao painel de administração.
-                    </p>
-                </>
-                ) : (
-                <>
-                    <p>Você tem certeza que deseja tornar <strong>{togglingAdminFor?.name}</strong> um administrador?</p>
-                    <p className="mt-2 text-sm text-yellow-700">
-                    Ele(a) terá acesso total para editar escalas, avisos e gerenciar membros.
-                    </p>
-                </>
-                )
-            }
+            message={ togglingAdminFor?.role === 'admin' ? `Remover privilégios de admin de ${togglingAdminFor?.name}?` : `Tornar ${togglingAdminFor?.name} um admin?`}
         />
+        
+        {/* Modal for creating/renaming schedules */}
+        {modalAction && (
+             <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-sm">
+                    <div className="p-6">
+                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                            {modalAction === 'create' ? 'Criar Nova Escala' : 'Renomear Escala'}
+                        </h3>
+                        <div className="mt-4">
+                            <label htmlFor="scheduleName" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Nome da Escala</label>
+                            <input
+                                type="text"
+                                id="scheduleName"
+                                value={modalInputValue}
+                                onChange={e => setModalInputValue(e.target.value)}
+                                onKeyPress={e => e.key === 'Enter' && handleModalConfirm()}
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 dark:text-white border border-slate-300 dark:border-slate-600 rounded-md shadow-sm"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-3 flex flex-row-reverse gap-3">
+                        <button onClick={handleModalConfirm} type="button" className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
+                            Salvar
+                        </button>
+                        <button onClick={() => setModalAction(null)} type="button" className="inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-700 text-base font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-600 sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        
+        <ConfirmationModal
+            isOpen={!!deletingSchedule}
+            onClose={() => setDeletingSchedule(null)}
+            onConfirm={confirmDeleteSchedule}
+            title="Confirmar Exclusão de Escala"
+            message={<><p>Excluir a escala <strong>{deletingSchedule?.name}</strong>?</p><p className="mt-2 text-sm text-red-600">Esta ação é irreversível.</p></>}
+        />
+
+        {/* Hidden container for PDF generation */}
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -1 }} aria-hidden="true">
+            <div id="schedule-to-print-admin-offscreen">
+                 <SchedulePDFView schedule={schedule} announcements={announcements} scheduleName={activeScheduleGroup?.name || ''} />
+            </div>
+        </div>
 
         <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-200">Painel do Administrador</h2>
                 <button
-                    onClick={handleSavePdf}
+                    onClick={() => setIsPdfConfirmOpen(true)}
                     disabled={isSavingPdf}
                     className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400"
                 >
@@ -313,7 +411,33 @@ const AdminView: React.FC<AdminViewProps> = ({ schedule, setSchedule, announceme
                 </button>
             </div>
             
-            <div id="schedule-to-print-admin" className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
+             <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
+                <h3 className="text-lg sm:text-xl font-bold mb-4 dark:text-slate-200">Gerenciar Escalas</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                    <button onClick={handleStartCreate} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        + Nova Escala
+                    </button>
+                    <div className="flex-grow">
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                            Editando: <strong className="font-semibold text-slate-800 dark:text-slate-100">{activeScheduleGroup?.name}</strong>
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={handleStartRename} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md">
+                            <EditIcon className="w-4 h-4" /> Renomear
+                        </button>
+                        <button onClick={() => activeScheduleGroup && setDeletingSchedule(activeScheduleGroup)}
+                            disabled={scheduleGroups.length <= 1}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/50 hover:bg-red-100 dark:hover:bg-red-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-md"
+                            title={scheduleGroups.length <= 1 ? "Não é possível excluir a única escala." : ""}
+                        >
+                            <TrashIcon className="w-4 h-4" /> Excluir
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
                  <h2 className="text-xl sm:text-2xl font-bold text-center text-slate-700 dark:text-slate-200 mb-6">Editar Escala Padrão da Semana</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {schedule.map(day => (
@@ -332,7 +456,7 @@ const AdminView: React.FC<AdminViewProps> = ({ schedule, setSchedule, announceme
                 <h3 className="text-lg sm:text-xl font-bold mb-4 dark:text-slate-200">Editar Avisos</h3>
                 <textarea
                     value={announcements}
-                    onChange={e => setAnnouncements(e.target.value)}
+                    onChange={e => onUpdateAnnouncements(e.target.value)}
                     rows={5}
                     className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
                     placeholder="Digite os avisos aqui..."
@@ -349,83 +473,29 @@ const AdminView: React.FC<AdminViewProps> = ({ schedule, setSchedule, announceme
                                 <Avatar member={member} className="w-10 h-10" />
                                 { editingMemberId === member.id ? (
                                     <div className="flex-grow space-y-1">
-                                        <input
-                                            type="text"
-                                            value={editedName}
-                                            onChange={e => setEditedName(e.target.value)}
-                                            className="w-full text-sm p-1 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white dark:bg-slate-700"
-                                            aria-label="Editar nome"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={editedPhone}
-                                            onChange={e => setEditedPhone(e.target.value)}
-                                            placeholder="Telefone"
-                                            className="w-full text-sm p-1 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white dark:bg-slate-700"
-                                            aria-label="Editar telefone"
-                                        />
+                                        <input type="text" value={editedName} onChange={e => setEditedName(e.target.value)} className="w-full text-sm p-1 border rounded-md" aria-label="Editar nome"/>
+                                        <input type="text" value={editedPhone} onChange={e => setEditedPhone(e.target.value)} placeholder="Telefone" className="w-full text-sm p-1 border rounded-md" aria-label="Editar telefone"/>
                                     </div>
                                 ) : (
                                     <div className="flex-grow">
                                         <p className="font-medium text-slate-800 dark:text-slate-100">{member.name}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">{member.email}</p>
-                                        {member.phone && (
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
-                                                <PhoneIcon className="w-3 h-3"/>
-                                                {member.phone}
-                                            </p>
-                                        )}
+                                        {member.phone && (<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5"><PhoneIcon className="w-3 h-3"/>{member.phone}</p>)}
                                     </div>
                                 )}
-                                
-                                {member.role === 'admin' && editingMemberId !== member.id && (
-                                    <span className="px-2 py-1 text-xs font-semibold text-indigo-800 bg-indigo-100 dark:text-indigo-200 dark:bg-indigo-900/50 rounded-full self-start">
-                                        Admin
-                                    </span>
-                                )}
+                                {member.role === 'admin' && editingMemberId !== member.id && ( <span className="px-2 py-1 text-xs font-semibold text-indigo-800 bg-indigo-100 dark:text-indigo-200 dark:bg-indigo-900/50 rounded-full self-start">Admin</span> )}
                             </div>
                             <div className="flex items-center gap-2 self-end sm:self-center">
                                 { editingMemberId === member.id ? (
                                     <>
-                                        <button onClick={handleSaveEdit} className="p-2 text-green-600 hover:text-green-800 rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors" aria-label="Salvar alterações">
-                                            <CheckIcon className="w-5 h-5"/>
-                                        </button>
-                                        <button onClick={handleCancelEdit} className="p-2 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors" aria-label="Cancelar edição">
-                                            <CloseIcon className="w-5 h-5"/>
-                                        </button>
+                                        <button onClick={handleSaveEditMember} className="p-2 text-green-600 rounded-full hover:bg-green-100" aria-label="Salvar"><CheckIcon className="w-5 h-5"/></button>
+                                        <button onClick={handleCancelEditMember} className="p-2 text-slate-500 rounded-full hover:bg-slate-100" aria-label="Cancelar"><CloseIcon className="w-5 h-5"/></button>
                                     </>
                                 ) : (
                                     <>
-                                        {member.id !== 'admin' && (
-                                            <button onClick={() => handleStartEdit(member)} className="p-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors" aria-label={`Editar ${member.name}`}>
-                                                <EditIcon className="w-5 h-5" />
-                                            </button>
-                                        )}
-                                        {currentUser.id !== member.id && member.id !== 'admin' && (
-                                             <button
-                                                onClick={() => setTogglingAdminFor(member)}
-                                                className={`px-3 py-1.5 rounded-full transition-colors text-sm font-medium flex items-center gap-1.5 ${
-                                                    member.role === 'admin'
-                                                    ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/50 dark:text-amber-200 dark:hover:bg-amber-900'
-                                                    : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/50 dark:text-indigo-200 dark:hover:bg-indigo-900'
-                                                }`}
-                                                aria-label={member.role === 'admin' ? `Remover admin de ${member.name}` : `Tornar ${member.name} admin`}
-                                            >
-                                                <AdminIcon className="w-4 h-4" />
-                                                <span className="hidden sm:inline">{member.role === 'admin' ? 'Remover Admin' : 'Tornar Admin'}</span>
-                                            </button>
-                                        )}
-                                        {member.id !== 'admin' && (
-                                            <button
-                                                onClick={() => setDeletingMember(member)}
-                                                className="p-2 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/50 transition-colors disabled:text-slate-300 dark:disabled:text-slate-600 disabled:hover:bg-transparent"
-                                                aria-label={`Excluir ${member.name}`}
-                                                disabled={member.role === 'admin'}
-                                                title={member.role === 'admin' ? "Remova o cargo de 'Admin' para poder excluir" : ""}
-                                            >
-                                                <TrashIcon className="w-5 h-5" />
-                                            </button>
-                                        )}
+                                        {member.id !== 'admin' && (<button onClick={() => handleStartEditMember(member)} className="p-2 text-slate-500 hover:text-indigo-600 rounded-full hover:bg-indigo-50" aria-label={`Editar ${member.name}`}><EditIcon className="w-5 h-5" /></button>)}
+                                        {currentUser.id !== member.id && member.id !== 'admin' && (<button onClick={() => setTogglingAdminFor(member)} className={`px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1.5 ${member.role === 'admin' ? 'text-amber-700 bg-amber-50' : 'text-indigo-700 bg-indigo-50'}`} aria-label={member.role === 'admin' ? `Remover admin de ${member.name}` : `Tornar ${member.name} admin`}><AdminIcon className="w-4 h-4" /> <span className="hidden sm:inline">{member.role === 'admin' ? 'Remover Admin' : 'Tornar Admin'}</span></button>)}
+                                        {member.id !== 'admin' && (<button onClick={() => setDeletingMember(member)} className="p-2 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-50 disabled:text-slate-300" aria-label={`Excluir ${member.name}`} disabled={member.role === 'admin'} title={member.role === 'admin' ? "Remova o cargo de 'Admin' para poder excluir" : ""}><TrashIcon className="w-5 h-5" /></button>)}
                                     </>
                                 )}
                             </div>

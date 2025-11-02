@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { BellIcon, AdminIcon, UserIcon, LogoutIcon } from './icons';
-import { Schedule, Member } from '../types';
+import { BellIcon, AdminIcon, UserIcon, LogoutIcon, SearchIcon } from './icons';
+import { Schedule, Member, ScheduleGroup } from '../types';
 import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
 
@@ -12,6 +12,10 @@ interface HeaderProps {
   isAdmin: boolean;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  onToggleSearch: () => void;
+  scheduleGroups: ScheduleGroup[];
+  activeScheduleGroupId: string;
+  onSetActiveScheduleGroupId: (id: string) => void;
 }
 
 const NotificationBell: React.FC<{ count: number }> = ({ count }) => {
@@ -27,7 +31,10 @@ const NotificationBell: React.FC<{ count: number }> = ({ count }) => {
     );
 };
 
-const Header: React.FC<HeaderProps> = ({ view, schedule, currentUser, onLogout, isAdmin, theme, onToggleTheme }) => {
+const Header: React.FC<HeaderProps> = ({ 
+    view, schedule, currentUser, onLogout, isAdmin, theme, onToggleTheme, onToggleSearch,
+    scheduleGroups, activeScheduleGroupId, onSetActiveScheduleGroupId 
+}) => {
     const notificationCount = useMemo(() => {
         if (!currentUser) return 0;
         
@@ -59,14 +66,38 @@ const Header: React.FC<HeaderProps> = ({ view, schedule, currentUser, onLogout, 
     <header className="bg-white dark:bg-slate-800 shadow-md">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-             <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100">Escala Semanal</h1>
+          <div className="flex items-center gap-4">
+             <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 hidden sm:block">Escala</h1>
+             <select
+                value={activeScheduleGroupId}
+                onChange={(e) => onSetActiveScheduleGroupId(e.target.value)}
+                className="block w-full max-w-xs pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                aria-label="Selecionar escala"
+             >
+                {scheduleGroups.map(group => (
+                    <option key={group.id} value={group.id}>
+                        {group.name}
+                    </option>
+                ))}
+             </select>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
             {currentUser && (
                 <>
                     {view === 'user' && <NotificationBell count={notificationCount} />}
                     
+                     <button
+                        onClick={onToggleSearch}
+                        type="button"
+                        className="flex items-center gap-2 p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800 transition-colors"
+                        aria-label="Abrir busca (Ctrl+K)"
+                    >
+                        <SearchIcon className="w-5 h-5" />
+                        <kbd className="hidden lg:inline-block px-2 py-1 text-xs font-sans font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md">
+                            Ctrl+K
+                        </kbd>
+                    </button>
+
                     <ThemeToggle theme={theme} onToggle={onToggleTheme} />
 
                     <div className="flex items-center gap-2">

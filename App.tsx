@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Schedule, Member, User } from './types';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Schedule, Member, User, ScheduleDay, ScheduleGroup, ScheduleParticipant } from './types';
 import AdminView from './components/AdminView';
 import UserView from './components/UserView';
 import Header from './components/Header';
@@ -8,6 +8,9 @@ import LoginView from './components/LoginView';
 import SignUpView from './components/SignUpView';
 import ForgotPasswordView from './components/ForgotPasswordView';
 import ResetPasswordView from './components/ResetPasswordView';
+import QuickSearchModal from './components/QuickSearchModal';
+import ProfileModal from './components/ProfileModal';
+import ScheduleDetailModal from './components/ScheduleDetailModal';
 
 const INITIAL_MEMBERS: Member[] = [
   { id: 'm1', name: 'João Alves', phone: '(11) 98765-4321', email: 'joao.alves@example.com', role: 'member' },
@@ -33,20 +36,41 @@ const INITIAL_USERS: User[] = [
     { email: 'ozeiasof@gmail.com', password: 'Oseias10', memberId: 'admin' },
 ];
 
+const memberToParticipant = (member: Member): ScheduleParticipant => ({
+    id: member.id,
+    name: member.name,
+    isRegistered: true,
+    memberData: member,
+});
 
-const INITIAL_SCHEDULE: Schedule = [
-  { id: 'd1', dayName: 'Domingo', event: 'Culto de Celebração', active: true, doorkeepers: [INITIAL_MEMBERS[0], INITIAL_MEMBERS[1]], hymnSingers: [INITIAL_MEMBERS[3], INITIAL_MEMBERS[5]] },
-  { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-  { id: 'd3', dayName: 'Terça-feira', event: 'Culto de Ensino', active: true, doorkeepers: [INITIAL_MEMBERS[2]], hymnSingers: [INITIAL_MEMBERS[4]] },
-  { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-  { id: 'd5', dayName: 'Quinta-feira', event: 'Círculo de Oração', active: true, doorkeepers: [INITIAL_MEMBERS[4], INITIAL_MEMBERS[6]], hymnSingers: [INITIAL_MEMBERS[1]] },
-  { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-  { id: 'd7', dayName: 'Sábado', event: 'Ensaio do Louvor', active: true, doorkeepers: [], hymnSingers: [INITIAL_MEMBERS[3], INITIAL_MEMBERS[5], INITIAL_MEMBERS[4]] },
+const BLANK_SCHEDULE: Schedule = [
+    { id: 'd1', dayName: 'Domingo', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+    { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+    { id: 'd3', dayName: 'Terça-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+    { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+    { id: 'd5', dayName: 'Quinta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+    { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+    { id: 'd7', dayName: 'Sábado', event: '', active: false, doorkeepers: [], hymnSingers: [] },
 ];
 
-const INITIAL_ANNOUNCEMENTS = `Bem-vindo ao nosso quadro de avisos!
+const INITIAL_SCHEDULE_GROUPS: ScheduleGroup[] = [
+    {
+        id: 'group_sede',
+        name: 'Sede',
+        schedule: [
+            { id: 'd1', dayName: 'Domingo', event: 'Culto de Celebração', active: true, doorkeepers: [INITIAL_MEMBERS[0], INITIAL_MEMBERS[1]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[3], INITIAL_MEMBERS[5]].map(memberToParticipant) },
+            { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+            { id: 'd3', dayName: 'Terça-feira', event: 'Culto de Ensino', active: true, doorkeepers: [INITIAL_MEMBERS[2]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[4]].map(memberToParticipant) },
+            { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+            { id: 'd5', dayName: 'Quinta-feira', event: 'Círculo de Oração', active: true, doorkeepers: [INITIAL_MEMBERS[4], INITIAL_MEMBERS[6]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[1]].map(memberToParticipant) },
+            { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+            { id: 'd7', dayName: 'Sábado', event: 'Ensaio do Louvor', active: true, doorkeepers: [], hymnSingers: [INITIAL_MEMBERS[3], INITIAL_MEMBERS[5], INITIAL_MEMBERS[4]].map(memberToParticipant) },
+        ],
+        announcements: `Bem-vindo ao nosso quadro de avisos!
 - Próximo sábado teremos um café da manhã especial.
-- A campanha de doação de agasalhos vai até o final do mês. Participe!`;
+- A campanha de doação de agasalhos vai até o final do mês. Participe!`
+    }
+];
 
 const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash || '#/');
@@ -55,16 +79,21 @@ const App: React.FC = () => {
     if (savedTheme === 'dark' || savedTheme === 'light') {
         return savedTheme;
     }
-    // Default to user's system preference
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
-  const [schedule, setSchedule] = useState<Schedule>(() => {
-    const savedSchedule = localStorage.getItem('churchSchedule');
-    return savedSchedule ? JSON.parse(savedSchedule) : INITIAL_SCHEDULE;
+
+  const [scheduleGroups, setScheduleGroups] = useState<ScheduleGroup[]>(() => {
+      const saved = localStorage.getItem('churchScheduleGroups');
+      return saved ? JSON.parse(saved) : INITIAL_SCHEDULE_GROUPS;
   });
-  const [announcements, setAnnouncements] = useState<string>(() => {
-    const savedAnnouncements = localStorage.getItem('churchAnnouncements');
-    return savedAnnouncements || INITIAL_ANNOUNCEMENTS;
+
+  const [activeScheduleGroupId, setActiveScheduleGroupId] = useState<string>(() => {
+      const saved = localStorage.getItem('activeChurchScheduleGroupId');
+      // Ensure the saved ID still exists, otherwise default to the first group
+      if (saved && scheduleGroups.some(g => g.id === saved)) {
+          return saved;
+      }
+      return scheduleGroups[0]?.id || '';
   });
 
   const [allMembers, setAllMembers] = useState<Member[]>(() => {
@@ -81,6 +110,17 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgotPassword' | 'resetPassword'>('login');
   const [resetEmail, setResetEmail] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [viewingProfile, setViewingProfile] = useState<Member | null>(null);
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState<{ date: Date; daySchedule: ScheduleDay } | null>(null);
+
+  const activeScheduleGroup = useMemo(() => 
+    scheduleGroups.find(g => g.id === activeScheduleGroupId) || scheduleGroups[0],
+  [scheduleGroups, activeScheduleGroupId]);
+
+  const activeSchedule = useMemo(() => activeScheduleGroup?.schedule || [], [activeScheduleGroup]);
+  const activeAnnouncements = useMemo(() => activeScheduleGroup?.announcements || '', [activeScheduleGroup]);
+
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -113,6 +153,18 @@ const App: React.FC = () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
+  
+  // Global keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+            event.preventDefault();
+            setIsSearchOpen(prev => !prev);
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const syncFromStorage = (e: StorageEvent) => {
@@ -122,11 +174,11 @@ const App: React.FC = () => {
       if (e.key === 'churchUsers' && e.newValue) {
         setUsers(JSON.parse(e.newValue));
       }
-      if (e.key === 'churchSchedule' && e.newValue) {
-        setSchedule(JSON.parse(e.newValue));
+      if (e.key === 'churchScheduleGroups' && e.newValue) {
+        setScheduleGroups(JSON.parse(e.newValue));
       }
-      if (e.key === 'churchAnnouncements' && e.newValue) {
-        setAnnouncements(e.newValue);
+      if (e.key === 'activeChurchScheduleGroupId' && e.newValue) {
+        setActiveScheduleGroupId(e.newValue);
       }
     };
 
@@ -137,12 +189,13 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('churchSchedule', JSON.stringify(schedule));
-  }, [schedule]);
-
+    localStorage.setItem('churchScheduleGroups', JSON.stringify(scheduleGroups));
+  }, [scheduleGroups]);
+  
   useEffect(() => {
-    localStorage.setItem('churchAnnouncements', announcements);
-  }, [announcements]);
+    localStorage.setItem('activeChurchScheduleGroupId', activeScheduleGroupId);
+  }, [activeScheduleGroupId]);
+
 
   useEffect(() => {
     const rememberedEmail = localStorage.getItem('rememberedUserEmail');
@@ -166,7 +219,7 @@ const App: React.FC = () => {
     const tomorrowIndex = (new Date().getDay() + 1) % 7;
     const tomorrowDayName = dayNames[tomorrowIndex];
 
-    const tomorrowSchedule = schedule.find(day => day.dayName === tomorrowDayName);
+    const tomorrowSchedule = activeSchedule.find(day => day.dayName === tomorrowDayName);
 
     if (tomorrowSchedule && tomorrowSchedule.active) {
       const isDoorkeeper = tomorrowSchedule.doorkeepers.some(m => m.id === currentUser.id);
@@ -177,10 +230,9 @@ const App: React.FC = () => {
         if (isDoorkeeper) tasks.push("Porteiro(a)");
         if (isSinger) tasks.push("Cantor(a)");
         
-        const message = `Você está escalado como ${tasks.join(' e ')} amanhã.`;
+        const message = `Você está escalado como ${tasks.join(' e ')} amanhã (${activeScheduleGroup?.name}).`;
         const pushEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
 
-        // Prioritize push notifications if enabled and permission is granted
         if (pushEnabled && 'Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({
                 type: 'SHOW_NOTIFICATION',
@@ -189,9 +241,9 @@ const App: React.FC = () => {
                     body: message
                 }
             });
-            setNotification(null); // Don't show in-app notification if push is sent
+            setNotification(null);
         } else {
-            setNotification(message); // Fallback to in-app notification
+            setNotification(message);
         }
 
       } else {
@@ -200,7 +252,7 @@ const App: React.FC = () => {
     } else {
         setNotification(null);
     }
-  }, [schedule, currentUser]);
+  }, [activeSchedule, currentUser, activeScheduleGroup]);
   
   const handleLogin = useCallback(async (email: string, password: string, rememberMe: boolean): Promise<boolean> => {
     const userAccount = users.find(u => u.email === email && u.password === password);
@@ -232,9 +284,7 @@ const App: React.FC = () => {
     setUsers(prev => [...prev, newUser]);
     setCurrentUser(newMember);
 
-    // Automatically "remember" new users
     localStorage.setItem('rememberedUserEmail', email);
-
     return { success: true };
   }, [users, allMembers]);
 
@@ -258,7 +308,6 @@ const App: React.FC = () => {
     
     setResetEmail(null);
     setAuthView('login');
-    // We can add a success message on the login screen later if needed
     return { success: true };
   }, [resetEmail]);
 
@@ -270,22 +319,23 @@ const App: React.FC = () => {
   };
   
   const handleDeleteMember = (memberId: string) => {
-    // 1. Remove member from all schedules
-    setSchedule(prevSchedule =>
-      prevSchedule.map(day => ({
-        ...day,
-        doorkeepers: day.doorkeepers.filter(m => m.id !== memberId),
-        hymnSingers: day.hymnSingers.filter(m => m.id !== memberId),
-      }))
+    // Remove member from all schedules in all groups
+    setScheduleGroups(prevGroups =>
+        prevGroups.map(group => ({
+            ...group,
+            schedule: group.schedule.map(day => ({
+                ...day,
+                doorkeepers: day.doorkeepers.filter(p => p.id !== memberId),
+                hymnSingers: day.hymnSingers.filter(p => p.id !== memberId),
+            })),
+        }))
     );
   
-    // 2. Find and remove the corresponding user account
     const memberToDelete = allMembers.find(m => m.id === memberId);
     if (memberToDelete) {
       setUsers(prevUsers => prevUsers.filter(u => u.email !== memberToDelete.email));
     }
   
-    // 3. Remove the member from the main list
     setAllMembers(prevMembers => prevMembers.filter(m => m.id !== memberId));
   };
   
@@ -305,12 +355,15 @@ const App: React.FC = () => {
         member.id === updatedMember.id ? updatedMember : member
       )
     );
-    // FIX: Update schedule with new member details to prevent stale data
-    setSchedule(prevSchedule =>
-        prevSchedule.map(day => ({
-            ...day,
-            doorkeepers: day.doorkeepers.map(m => m.id === updatedMember.id ? updatedMember : m),
-            hymnSingers: day.hymnSingers.map(m => m.id === updatedMember.id ? updatedMember : m),
+    // Update participant details across all schedule groups
+    setScheduleGroups(prevGroups =>
+        prevGroups.map(group => ({
+            ...group,
+            schedule: group.schedule.map(day => ({
+                ...day,
+                doorkeepers: day.doorkeepers.map(p => p.id === updatedMember.id ? { ...p, name: updatedMember.name, memberData: updatedMember } : p),
+                hymnSingers: day.hymnSingers.map(p => p.id === updatedMember.id ? { ...p, name: updatedMember.name, memberData: updatedMember } : p),
+            })),
         }))
     );
     if (currentUser?.id === updatedMember.id) {
@@ -319,33 +372,99 @@ const App: React.FC = () => {
   };
 
   const handleUpdateAvatar = (memberId: string, avatarDataUrl: string) => {
-    let updatedMemberWithAvatar: Member | null = null;
-    
     setAllMembers(prevMembers =>
-      prevMembers.map(member => {
-        if (member.id === memberId) {
-            updatedMemberWithAvatar = { ...member, avatar: avatarDataUrl };
-            return updatedMemberWithAvatar;
-        }
-        return member;
-      })
+      prevMembers.map(member => 
+        member.id === memberId ? { ...member, avatar: avatarDataUrl } : member
+      )
     );
-
-    // FIX: Propagate avatar change to the schedule to prevent stale data
-    if (updatedMemberWithAvatar) {
-        const finalUpdatedMember = updatedMemberWithAvatar;
-        setSchedule(prevSchedule =>
-            prevSchedule.map(day => ({
+    
+    setScheduleGroups(prevGroups =>
+        prevGroups.map(group => ({
+            ...group,
+            schedule: group.schedule.map(day => ({
                 ...day,
-                doorkeepers: day.doorkeepers.map(m => m.id === memberId ? finalUpdatedMember : m),
-                hymnSingers: day.hymnSingers.map(m => m.id === memberId ? finalUpdatedMember : m),
-            }))
-        );
-    }
+                doorkeepers: day.doorkeepers.map(p => {
+                    if (p.id === memberId && p.memberData) {
+                        return { ...p, memberData: { ...p.memberData, avatar: avatarDataUrl } };
+                    }
+                    return p;
+                }),
+                hymnSingers: day.hymnSingers.map(p => {
+                    if (p.id === memberId && p.memberData) {
+                        return { ...p, memberData: { ...p.memberData, avatar: avatarDataUrl } };
+                    }
+                    return p;
+                }),
+            })),
+        }))
+    );
     
     if (currentUser?.id === memberId) {
       setCurrentUser(prev => (prev ? { ...prev, avatar: avatarDataUrl } : null));
     }
+  };
+
+  const handleSelectMemberFromSearch = (member: Member) => {
+    setIsSearchOpen(false);
+    setViewingProfile(member);
+  };
+
+  const handleSelectTaskFromSearch = (day: ScheduleDay) => {
+    const dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const targetDayIndex = dayNames.indexOf(day.dayName);
+    
+    if (targetDayIndex === -1) return;
+
+    const today = new Date();
+    const currentDayIndex = today.getDay();
+    let dayDifference = targetDayIndex - currentDayIndex;
+
+    if (dayDifference < 0) {
+        dayDifference += 7;
+    }
+
+    const nextDate = new Date();
+    nextDate.setDate(today.getDate() + dayDifference);
+    
+    setIsSearchOpen(false);
+    setSelectedTaskDetail({ date: nextDate, daySchedule: day });
+  };
+  
+  const handleSetActiveSchedule = (newSchedule: Schedule) => {
+    setScheduleGroups(prev => prev.map(group => 
+        group.id === activeScheduleGroupId ? { ...group, schedule: newSchedule } : group
+    ));
+  };
+
+  const handleSetActiveAnnouncements = (newAnnouncements: string) => {
+      setScheduleGroups(prev => prev.map(group => 
+          group.id === activeScheduleGroupId ? { ...group, announcements: newAnnouncements } : group
+      ));
+  };
+
+  const handleAddScheduleGroup = (name: string) => {
+      const newGroup: ScheduleGroup = {
+          id: `group_${Date.now()}`,
+          name,
+          schedule: BLANK_SCHEDULE,
+          announcements: `Bem-vindo ao quadro de avisos de ${name}!`
+      };
+      setScheduleGroups(prev => [...prev, newGroup]);
+      setActiveScheduleGroupId(newGroup.id);
+  };
+
+  const handleDeleteScheduleGroup = (id: string) => {
+      setScheduleGroups(prev => prev.filter(group => group.id !== id));
+      // If the deleted group was the active one, switch to the first available group
+      if (activeScheduleGroupId === id) {
+          setActiveScheduleGroupId(scheduleGroups[0]?.id || '');
+      }
+  };
+
+  const handleUpdateScheduleGroupName = (id: string, newName: string) => {
+      setScheduleGroups(prev => prev.map(group =>
+          group.id === id ? { ...group, name: newName } : group
+      ));
   };
 
 
@@ -370,31 +489,42 @@ const App: React.FC = () => {
       <Header 
         isAdmin={isAdmin} 
         view={currentView} 
-        schedule={schedule} 
+        schedule={activeSchedule} 
         currentUser={currentUser} 
         onLogout={handleLogout} 
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        onToggleSearch={() => setIsSearchOpen(true)}
+        scheduleGroups={scheduleGroups}
+        activeScheduleGroupId={activeScheduleGroupId}
+        onSetActiveScheduleGroupId={setActiveScheduleGroupId}
       />
       <main className="p-4 sm:p-6 lg:p-8">
         {currentView === 'admin' ? (
           <AdminView
-            schedule={schedule}
-            setSchedule={setSchedule}
-            announcements={announcements}
-            setAnnouncements={setAnnouncements}
+            schedule={activeSchedule}
+            onUpdateSchedule={handleSetActiveSchedule}
+            announcements={activeAnnouncements}
+            onUpdateAnnouncements={handleSetActiveAnnouncements}
             allMembers={allMembers}
             onDeleteMember={handleDeleteMember}
             currentUser={currentUser}
             onToggleAdmin={handleToggleAdminStatus}
             onUpdateMember={handleUpdateMember}
+            scheduleGroups={scheduleGroups}
+            activeScheduleGroupId={activeScheduleGroupId}
+            onAddScheduleGroup={handleAddScheduleGroup}
+            onDeleteScheduleGroup={handleDeleteScheduleGroup}
+            onUpdateScheduleGroupName={handleUpdateScheduleGroupName}
           />
         ) : (
           <UserView 
-            schedule={schedule} 
-            announcements={announcements} 
+            schedule={activeSchedule} 
+            announcements={activeAnnouncements} 
             currentUser={currentUser}
             onUpdateAvatar={handleUpdateAvatar}
+            onMemberClick={setViewingProfile}
+            scheduleName={activeScheduleGroup?.name || ''}
           />
         )}
       </main>
@@ -405,6 +535,31 @@ const App: React.FC = () => {
           onClose={() => setNotification(null)}
         />
       )}
+
+      <QuickSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        allMembers={allMembers}
+        schedule={activeSchedule}
+        onSelectMember={handleSelectMemberFromSearch}
+        onSelectTask={handleSelectTaskFromSearch}
+      />
+
+      <ProfileModal 
+        member={viewingProfile}
+        schedule={activeSchedule}
+        onClose={() => setViewingProfile(null)}
+        currentUser={currentUser}
+        onUpdateAvatar={handleUpdateAvatar}
+      />
+
+      <ScheduleDetailModal
+        isOpen={!!selectedTaskDetail}
+        onClose={() => setSelectedTaskDetail(null)}
+        date={selectedTaskDetail?.date}
+        daySchedule={selectedTaskDetail?.daySchedule}
+        onMemberClick={(member) => setViewingProfile(member)}
+      />
 
       <footer className="text-center p-4 text-slate-500 dark:text-slate-400 text-sm">
         <p>&copy; {new Date().getFullYear()} Ministério Local. Todos os direitos reservados.</p>

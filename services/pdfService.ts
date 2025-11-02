@@ -11,11 +11,12 @@ export const exportScheduleToPDF = (elementId: string, fileName: string): Promis
     }
 
     html2canvas(element, {
-      scale: 2,
+      scale: 2, // Higher scale for better quality
       useCORS: true,
       logging: false,
       windowWidth: element.scrollWidth,
       windowHeight: element.scrollHeight,
+      backgroundColor: '#ffffff', // Explicitly set background
     }).then((canvas: HTMLCanvasElement) => {
       try {
         const imgData = canvas.toDataURL('image/png');
@@ -25,22 +26,28 @@ export const exportScheduleToPDF = (elementId: string, fileName: string): Promis
           format: 'a4',
         });
         
-        const imgProperties = pdf.getImageProperties(imgData);
+        const margin = 10; // 10mm margin
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgHeight = (imgProperties.height * pdfWidth) / imgProperties.width;
-        
-        let heightLeft = imgHeight;
-        let position = 0;
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const contentWidth = pdfWidth - (margin * 2);
+        const pageContentHeight = pdfHeight - (margin * 2);
 
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pageHeight;
+        const imgProps = pdf.getImageProperties(imgData);
+        const totalImgHeight = (imgProps.height * contentWidth) / imgProps.width;
+
+        let heightLeft = totalImgHeight;
+        let position = margin;
+
+        // Add the image to the PDF, placing it at the top margin.
+        // The Y position will be negative on subsequent pages to "scroll" the image up.
+        pdf.addImage(imgData, 'PNG', margin, position, contentWidth, totalImgHeight);
+        heightLeft -= pageContentHeight;
         
         while (heightLeft > 0) {
-          position -= pageHeight;
+          position -= pageContentHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-          heightLeft -= pageHeight;
+          pdf.addImage(imgData, 'PNG', margin, position, contentWidth, totalImgHeight);
+          heightLeft -= pageContentHeight;
         }
 
         pdf.save(fileName);

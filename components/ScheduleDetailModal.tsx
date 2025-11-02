@@ -1,5 +1,5 @@
 import React from 'react';
-import { Member, ScheduleDay } from '../types';
+import { Member, ScheduleDay, ScheduleParticipant } from '../types';
 import { CloseIcon, UserIcon } from './icons';
 
 interface ScheduleDetailModalProps {
@@ -13,17 +13,21 @@ interface ScheduleDetailModalProps {
 const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({ isOpen, onClose, date, daySchedule, onMemberClick }) => {
   if (!isOpen || !date || !daySchedule) return null;
 
-  const renderMemberList = (members: Member[]) => (
+  const renderMemberList = (participants: ScheduleParticipant[]) => (
     <ul className="space-y-1">
-        {members.map(m => (
-            <li key={m.id} className="flex items-center gap-2">
+        {participants.map(p => (
+            <li key={p.id} className="flex items-center gap-2">
                 <UserIcon className="w-4 h-4 text-slate-400"/>
-                <button
-                    onClick={() => onMemberClick(m)}
-                    className="text-left text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
-                >
-                    {m.name}
-                </button>
+                 {p.isRegistered && p.memberData ? (
+                    <button
+                        onClick={() => onMemberClick(p.memberData!)}
+                        className="text-left text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
+                    >
+                        {p.name}
+                    </button>
+                 ) : (
+                    <span className="text-slate-800 dark:text-slate-200">{p.name}</span>
+                 )}
             </li>
         ))}
     </ul>
