@@ -11,6 +11,7 @@ import ResetPasswordView from './components/ResetPasswordView';
 import QuickSearchModal from './components/QuickSearchModal';
 import ProfileModal from './components/ProfileModal';
 import ScheduleDetailModal from './components/ScheduleDetailModal';
+import { sendWelcomeEmail } from './services/emailService';
 
 const INITIAL_MEMBERS: Member[] = [
   { id: 'm1', name: 'João Alves', phone: '(11) 98765-4321', email: 'joao.alves@example.com', role: 'member' },
@@ -157,14 +158,6 @@ const App: React.FC = () => {
   const handleToggleTheme = () => {
     setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
   };
-
-  useEffect(() => {
-    localStorage.setItem('churchMembers', JSON.stringify(allMembers));
-  }, [allMembers]);
-
-  useEffect(() => {
-    localStorage.setItem('churchUsers', JSON.stringify(users));
-  }, [users]);
   
   useEffect(() => {
     const handleHashChange = () => {
@@ -277,13 +270,13 @@ const App: React.FC = () => {
 
       } else {
         setNotification(null);
-      }
+    }
     } else {
         setNotification(null);
     }
   }, [activeSchedule, currentUser, activeScheduleGroup]);
   
-  const handleLogin = useCallback(async (email: string, password: string, rememberMe: boolean): Promise<boolean> => {
+  const handleLogin = useCallback(async (email: string, password: string, rememberMe: boolean): Promise<{ success: boolean; message?: string }> => {
     const userAccount = users.find(u => u.email === email && u.password === password);
     if (userAccount) {
         const memberProfile = allMembers.find(m => m.id === userAccount.memberId);
@@ -294,28 +287,59 @@ const App: React.FC = () => {
             } else {
                 localStorage.removeItem('rememberedUserEmail');
             }
-            return true;
+            return { success: true };
         }
     }
-    return false;
+    // Updated generic error to specific friendly message
+    return { success: false, message: 'Ops! E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.' };
   }, [users, allMembers]);
 
   const handleSignUp = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     if (users.some(u => u.email === email)) {
-        return { success: false, message: 'Este e-mail já está em uso.' };
+        return { success: false, message: 'Este e-mail já está sendo usado por outra conta. Se você já se cadastrou, tente fazer login.' };
     }
 
     const newMemberId = `m_${Date.now()}`;
     const newMember: Member = { id: newMemberId, name, email, phone: '', role: 'member' };
     const newUser: User = { email, password, memberId: newMemberId };
 
-    setAllMembers(prev => [...prev, newMember]);
-    setUsers(prev => [...prev, newUser]);
-    setCurrentUser(newMember);
+    const updatedMembers = [...allMembers, newMember];
+    const updatedUsers = [...users, newUser];
 
-    localStorage.setItem('rememberedUserEmail', email);
-    return { success: true };
+    try {
+        localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
+        localStorage.setItem('churchUsers', JSON.stringify(updatedUsers));
+        
+        setAllMembers(updatedMembers);
+        setUsers(updatedUsers);
+        setCurrentUser(newMember);
+
+        localStorage.setItem('rememberedUserEmail', email);
+        
+        sendWelcomeEmail(email, name);
+        
+        return { success: true };
+    } catch (e) {
+        console.error("Database save failed", e);
+        return { success: false, message: 'Não foi possível salvar seus dados. Verifique o espaço de armazenamento do seu navegador.' };
+    }
   }, [users, allMembers]);
+  
+  const handleAddMember = useCallback((name: string, email: string, phone: string) => {
+      const newMember: Member = {
+          id: `m_${Date.now()}_admin`,
+          name,
+          email,
+          phone,
+          role: 'member'
+      };
+      
+      const updatedMembers = [...allMembers, newMember];
+      localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
+      setAllMembers(updatedMembers);
+      
+      sendWelcomeEmail(email, name);
+  }, [allMembers]);
 
   const handleForgotPasswordRequest = useCallback(async (email: string): Promise<{ success: boolean; message?: string }> => {
     if (users.some(u => u.email === email)) {
@@ -323,22 +347,25 @@ const App: React.FC = () => {
         setAuthView('resetPassword');
         return { success: true };
     }
-    return { success: false, message: 'E-mail não encontrado em nosso sistema.' };
+    return { success: false, message: 'Não encontramos nenhuma conta com este e-mail. Verifique se digitou corretamente.' };
   }, [users]);
 
   const handlePasswordReset = useCallback(async (password: string): Promise<{ success: boolean; message?: string }> => {
     if (!resetEmail) {
-      return { success: false, message: 'Ocorreu um erro. Tente novamente.' };
+      return { success: false, message: 'Houve um problema com a sessão de recuperação. Por favor, comece o processo novamente.' };
     }
     
-    setUsers(prevUsers => prevUsers.map(user => 
+    const updatedUsers = users.map(user => 
         user.email === resetEmail ? { ...user, password } : user
-    ));
+    );
+
+    localStorage.setItem('churchUsers', JSON.stringify(updatedUsers));
+    setUsers(updatedUsers);
     
     setResetEmail(null);
     setAuthView('login');
     return { success: true };
-  }, [resetEmail]);
+  }, [resetEmail, users]);
 
 
   const handleLogout = () => {
@@ -348,43 +375,50 @@ const App: React.FC = () => {
   };
   
   const handleDeleteMember = (memberId: string) => {
-    // Remove member from all schedules in all groups
-    setScheduleGroups(prevGroups =>
-        prevGroups.map(group => ({
+    const updatedMembers = allMembers.filter(m => m.id !== memberId);
+    
+    const updatedGroups = scheduleGroups.map(group => ({
             ...group,
             schedule: group.schedule.map(day => ({
                 ...day,
                 doorkeepers: day.doorkeepers.filter(p => p.id !== memberId),
                 hymnSingers: day.hymnSingers.filter(p => p.id !== memberId),
             })),
-        }))
-    );
-  
+        }));
+    
     const memberToDelete = allMembers.find(m => m.id === memberId);
+    let updatedUsers = users;
     if (memberToDelete) {
-      setUsers(prevUsers => prevUsers.filter(u => u.email !== memberToDelete.email));
+      updatedUsers = users.filter(u => u.email !== memberToDelete.email);
     }
-  
-    setAllMembers(prevMembers => prevMembers.filter(m => m.id !== memberId));
+    
+    localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
+    localStorage.setItem('churchUsers', JSON.stringify(updatedUsers));
+    localStorage.setItem('churchScheduleGroups', JSON.stringify(updatedGroups));
+
+    setScheduleGroups(updatedGroups);
+    setUsers(updatedUsers);
+    setAllMembers(updatedMembers);
   };
   
   const handleToggleAdminStatus = (memberId: string) => {
-    setAllMembers(prevMembers =>
-      prevMembers.map(member =>
+    const updatedMembers = allMembers.map(member =>
         member.id === memberId
-          ? { ...member, role: member.role === 'admin' ? 'member' : 'admin' }
+          ? { ...member, role: member.role === 'admin' ? 'member' as const : 'admin' as const }
           : member
-      )
-    );
+      );
+    localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
+    setAllMembers(updatedMembers);
   };
   
   const handleUpdateMember = (updatedMember: Member) => {
-    setAllMembers(prevMembers =>
-      prevMembers.map(member =>
+    const updatedMembers = allMembers.map(member =>
         member.id === updatedMember.id ? updatedMember : member
-      )
-    );
-    // Update participant details across all schedule groups
+      );
+    
+    localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
+    setAllMembers(updatedMembers);
+    
     setScheduleGroups(prevGroups =>
         prevGroups.map(group => ({
             ...group,
@@ -401,11 +435,11 @@ const App: React.FC = () => {
   };
 
   const handleUpdateAvatar = (memberId: string, avatarDataUrl: string) => {
-    setAllMembers(prevMembers =>
-      prevMembers.map(member => 
+    const updatedMembers = allMembers.map(member => 
         member.id === memberId ? { ...member, avatar: avatarDataUrl } : member
-      )
-    );
+      );
+    localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
+    setAllMembers(updatedMembers);
     
     setScheduleGroups(prevGroups =>
         prevGroups.map(group => ({
@@ -491,7 +525,6 @@ const App: React.FC = () => {
   const handleDeleteScheduleGroup = (id: string) => {
       const remainingGroups = scheduleGroups.filter(group => group.id !== id);
       setScheduleGroups(remainingGroups);
-      // If the deleted group was the active one, switch to the first available group
       if (activeScheduleGroupId === id) {
           setActiveScheduleGroupId(remainingGroups[0]?.id || '');
       }
@@ -544,6 +577,7 @@ const App: React.FC = () => {
             onUpdateAnnouncements={handleSetActiveAnnouncements}
             allMembers={allMembers}
             onDeleteMember={handleDeleteMember}
+            onAddMember={handleAddMember}
             currentUser={currentUser}
             onToggleAdmin={handleToggleAdminStatus}
             onUpdateMember={handleUpdateMember}

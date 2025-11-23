@@ -20,10 +20,9 @@ const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSubmit, onSwi
     const result = await onSubmit(email);
 
     if (result.success) {
-      setSuccessMessage('Se o e-mail existir em nosso sistema, um link para redefinir a senha foi enviado.');
-      // A lógica de navegação é tratada no App.tsx
+      setSuccessMessage('Pronto! Enviamos as instruções de redefinição para o seu e-mail. Verifique sua caixa de entrada.');
     } else {
-      setError(result.message || 'Ocorreu um erro.');
+      setError(result.message || 'Ocorreu um erro ao processar sua solicitação.');
     }
     setIsLoading(false);
   };
@@ -59,13 +58,13 @@ const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSubmit, onSwi
           </div>
 
           {error && (
-            <div className="p-3 text-sm text-red-700 bg-red-100 border-l-4 border-red-500" role="alert">
+            <div className="p-3 text-sm text-red-700 bg-red-100 border-l-4 border-red-500 rounded-md" role="alert">
               <p>{error}</p>
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3 text-sm text-green-700 bg-green-100 border-l-4 border-green-500" role="alert">
+            <div className="p-3 text-sm text-green-700 bg-green-100 border-l-4 border-green-500 rounded-md" role="alert">
               <p>{successMessage}</p>
             </div>
           )}
@@ -76,7 +75,7 @@ const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSubmit, onSwi
               disabled={isLoading || !!successMessage}
               className="relative flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md group hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
             >
-              {isLoading ? 'Enviando...' : 'Enviar'}
+              {isLoading ? 'Verificando...' : 'Enviar Instruções'}
             </button>
           </div>
         </form>

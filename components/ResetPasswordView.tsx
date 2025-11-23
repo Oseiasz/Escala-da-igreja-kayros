@@ -29,15 +29,15 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
     setError(null);
     
     if (password !== confirmPassword) {
-      setError('As senhas não coincidem.');
+      setError('As senhas não coincidem. Certifique-se de digitar a mesma senha nos dois campos.');
       return;
     }
     if (password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres.');
+      setError('Para sua segurança, a senha deve ter no mínimo 6 caracteres.');
       return;
     }
     if (email && password.toLowerCase() === email.toLowerCase()) {
-      setError('A senha não pode ser igual ao seu e-mail.');
+      setError('Por segurança, sua nova senha não pode ser igual ao seu endereço de e-mail. Escolha uma senha diferente.');
       return;
     }
 
@@ -50,7 +50,7 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
         onSwitchToLogin();
       }, 3000); // Aguarda 3 segundos antes de redirecionar
     } else {
-      setError(result.message || 'Ocorreu um erro ao redefinir a senha.');
+      setError(result.message || 'Não conseguimos redefinir sua senha no momento. Tente novamente.');
     }
     
     setIsLoading(false);
@@ -63,7 +63,7 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
        <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
          <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg text-center">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Senha Redefinida!</h2>
-            <p className="text-slate-600 dark:text-slate-300">Sua senha foi atualizada com sucesso. Você será redirecionado para a tela de login.</p>
+            <p className="text-slate-600 dark:text-slate-300">Sua senha foi atualizada com sucesso. Você será redirecionado para a tela de login em instantes.</p>
          </div>
        </div>
     )
@@ -105,6 +105,7 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
                 {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
               </button>
             </div>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Mínimo de 6 caracteres.</p>
           </div>
           <div>
             <label htmlFor="confirm-password"className="block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -133,7 +134,7 @@ const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ email, onSubmit, 
           </div>
 
           {error && (
-            <div className="p-3 text-sm text-red-700 bg-red-100 border-l-4 border-red-500" role="alert">
+            <div className="p-3 text-sm text-red-700 bg-red-100 border-l-4 border-red-500 rounded-md" role="alert">
               <p>{error}</p>
             </div>
           )}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon, SpinnerIcon } from './icons';
 
 interface LoginViewProps {
-  onLogin: (email: string, password: string, rememberMe: boolean) => Promise<boolean>;
+  onLogin: (email: string, password: string, rememberMe: boolean) => Promise<{ success: boolean; message?: string }>;
   onSwitchToSignUp: () => void;
   onForgotPassword: () => void;
 }
@@ -19,15 +19,15 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    const success = await onLogin(email, password, rememberMe);
-    if (!success) {
-      setError('E-mail ou senha inválidos. Tente novamente.');
+    const result = await onLogin(email, password, rememberMe);
+    if (!result.success) {
+      setError(result.message || 'Verifique se o e-mail e a senha estão corretos e tente novamente.');
     }
     setIsLoading(false);
   };
 
   const inputBaseClasses = "w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none focus:outline-none sm:text-sm";
-  const inputErrorClasses = "border-red-500 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 dark:bg-red-900/20";
+  const inputErrorClasses = "border-red-500 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 dark:bg-red-900/20 dark:text-red-200";
   const inputNormalClasses = "border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white";
 
 
@@ -119,7 +119,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
           </div>
 
           {error && (
-            <div className="p-3 text-sm text-red-700 bg-red-100 border-l-4 border-red-500" role="alert">
+            <div className="p-3 text-sm text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-300 border-l-4 border-red-500 rounded-md" role="alert">
               <p>{error}</p>
             </div>
           )}

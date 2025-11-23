@@ -148,3 +148,20 @@ export const MusicalNoteIcon: React.FC<{ className?: string }> = ({ className })
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
     </svg>
 );
+
+export const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+    </svg>
+);
+
+export const QrCodeIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM6 12V8h4v4H6z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 8V6a2 2 0 012-2h1.5m2.5 0h3a2 2 0 012 2v2m0 0h-4v4h4v-4zM6 12v1.5a2.5 2.5 0 002.5 2.5h2M18 16v2a2 2 0 01-2 2h-2m-4 0h-1.5a2.5 2.5 0 01-2.5-2.5V16" />
+        <rect x="5" y="5" width="6" height="6" rx="1" />
+        <rect x="13" y="5" width="6" height="6" rx="1" />
+        <rect x="5" y="13" width="6" height="6" rx="1" />
+        <rect x="14" y="14" width="4" height="4" rx="1" />
+    </svg>
+);

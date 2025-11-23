@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { EyeIcon, EyeSlashIcon } from './icons';
+import React, { useState, useMemo } from 'react';
+import { EyeIcon, EyeSlashIcon, CheckIcon, CloseIcon } from './icons';
 
 interface SignUpViewProps {
   onSignUp: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
@@ -14,22 +14,35 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onSignUp, onSwitchToLogin }) =>
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Password Validation Logic
+  const passwordValidation = useMemo(() => {
+    return {
+      hasMinLength: password.length >= 6,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+  }, [password]);
+
+  const isPasswordValid = Object.values(passwordValidation).every(Boolean);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
 
-    if (password.length < 6) {
-        setError('A senha deve ter pelo menos 6 caracteres.');
+    if (!isPasswordValid) {
+        setError('A senha precisa atender a todos os requisitos de segurança listados abaixo.');
         return;
     }
+
     if (trimmedName && password.toLowerCase() === trimmedName.toLowerCase()) {
-        setError('A senha não pode ser igual ao seu nome. Escolha uma senha mais segura.');
+        setError('Por segurança, sua senha não deve ser igual ao seu nome. Tente uma combinação diferente.');
         return;
     }
     if (trimmedEmail && password.toLowerCase() === trimmedEmail.toLowerCase()) {
-        setError('A senha não pode ser igual ao seu e-mail. Escolha uma senha mais segura.');
+        setError('Por segurança, evite usar seu e-mail como senha. Escolha algo mais difícil de adivinhar.');
         return;
     }
 
@@ -37,7 +50,7 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onSignUp, onSwitchToLogin }) =>
     setIsLoading(true);
     const result = await onSignUp(trimmedName, trimmedEmail, password);
     if (!result.success) {
-      setError(result.message || 'Ocorreu um erro ao criar a conta.');
+      setError(result.message || 'Ocorreu um erro inesperado ao criar a conta. Tente novamente mais tarde.');
     }
     setIsLoading(false);
   };
@@ -116,10 +129,37 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onSignUp, onSwitchToLogin }) =>
                 {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
               </button>
             </div>
+            
+            {/* Visual Password Feedback */}
+            {password.length > 0 && (
+                <div className="mt-3 space-y-2 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-md text-xs">
+                    <p className="font-semibold text-slate-500 dark:text-slate-400 mb-2">A senha deve conter:</p>
+                    
+                    <div className={`flex items-center gap-2 ${passwordValidation.hasMinLength ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {passwordValidation.hasMinLength ? <CheckIcon className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-500" />}
+                        <span>Mínimo de 6 caracteres</span>
+                    </div>
+
+                    <div className={`flex items-center gap-2 ${passwordValidation.hasUpperCase ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {passwordValidation.hasUpperCase ? <CheckIcon className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-500" />}
+                        <span>Pelo menos uma letra maiúscula</span>
+                    </div>
+
+                    <div className={`flex items-center gap-2 ${passwordValidation.hasNumber ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {passwordValidation.hasNumber ? <CheckIcon className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-500" />}
+                        <span>Pelo menos um número</span>
+                    </div>
+
+                    <div className={`flex items-center gap-2 ${passwordValidation.hasSpecialChar ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {passwordValidation.hasSpecialChar ? <CheckIcon className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-500" />}
+                        <span>Pelo menos um caractere especial (!@#$...)</span>
+                    </div>
+                </div>
+            )}
           </div>
 
           {error && (
-            <div className="p-3 text-sm text-red-700 bg-red-100 border-l-4 border-red-500" role="alert">
+            <div className="p-3 text-sm text-red-700 bg-red-100 border-l-4 border-red-500 rounded-md" role="alert">
               <p>{error}</p>
             </div>
           )}

@@ -1,12 +1,14 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Schedule, ScheduleDay, Member, ScheduleGroup, ScheduleParticipant } from '../types';
-import { PdfIcon, EditIcon, TrashIcon, AdminIcon, PhoneIcon, CheckIcon, CloseIcon, UserIcon, KeyIcon, MusicalNoteIcon } from './icons';
+import { PdfIcon, EditIcon, TrashIcon, AdminIcon, PhoneIcon, CheckIcon, CloseIcon, UserIcon, KeyIcon, MusicalNoteIcon, PlusIcon, QrCodeIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import MultiSelect from './MultiSelect';
 import ConfirmationModal from './ConfirmationModal';
 import Avatar from './Avatar';
 import { sendNewAssignmentNotificationToAdmins } from '../services/emailService';
 import SchedulePDFView from './SchedulePDFView';
+import QRCodeModal from './QRCodeModal';
 
 interface AdminViewProps {
   schedule: Schedule;
@@ -15,6 +17,7 @@ interface AdminViewProps {
   onUpdateAnnouncements: (newAnnouncements: string) => void;
   allMembers: Member[];
   onDeleteMember: (memberId: string) => void;
+  onAddMember: (name: string, email: string, phone: string) => void;
   currentUser: Member;
   onToggleAdmin: (memberId: string) => void;
   onUpdateMember: (member: Member) => void;
@@ -193,12 +196,13 @@ const AdminScheduleCard: React.FC<{ day: ScheduleDay, onEdit: (day: ScheduleDay)
 
 const AdminView: React.FC<AdminViewProps> = ({ 
     schedule, onUpdateSchedule, announcements, onUpdateAnnouncements, allMembers, 
-    onDeleteMember, currentUser, onToggleAdmin, onUpdateMember,
+    onDeleteMember, onAddMember, currentUser, onToggleAdmin, onUpdateMember,
     scheduleGroups, activeScheduleGroupId, onAddScheduleGroup, onDeleteScheduleGroup, onUpdateScheduleGroupName
 }) => {
     const [editingDay, setEditingDay] = useState<ScheduleDay | null>(null);
     const [isSavingPdf, setIsSavingPdf] = useState(false);
     const [isPdfConfirmOpen, setIsPdfConfirmOpen] = useState(false);
+    const [isQrOpen, setIsQrOpen] = useState(false);
     const [deletingMember, setDeletingMember] = useState<Member | null>(null);
     const [togglingAdminFor, setTogglingAdminFor] = useState<Member | null>(null);
     const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
@@ -208,6 +212,12 @@ const AdminView: React.FC<AdminViewProps> = ({
     const [modalInputValue, setModalInputValue] = useState('');
     const [deletingSchedule, setDeletingSchedule] = useState<ScheduleGroup | null>(null);
     
+    // State for new member form
+    const [newMemberName, setNewMemberName] = useState('');
+    const [newMemberEmail, setNewMemberEmail] = useState('');
+    const [newMemberPhone, setNewMemberPhone] = useState('');
+    const [addMemberError, setAddMemberError] = useState<string | null>(null);
+
     const activeScheduleGroup = useMemo(() => 
         scheduleGroups.find(g => g.id === activeScheduleGroupId),
     [scheduleGroups, activeScheduleGroupId]);
@@ -340,9 +350,32 @@ const AdminView: React.FC<AdminViewProps> = ({
         }
     };
 
+    const handleAddNewMember = (e: React.FormEvent) => {
+        e.preventDefault();
+        setAddMemberError(null);
+
+        const normalizedEmail = newMemberEmail.trim().toLowerCase();
+        
+        // Check if email already exists
+        const emailExists = allMembers.some(member => member.email.toLowerCase() === normalizedEmail);
+        
+        if (emailExists) {
+            setAddMemberError('Este endereço de e-mail já está cadastrado para outro membro.');
+            return;
+        }
+
+        if (newMemberName.trim() && newMemberEmail.trim()) {
+            onAddMember(newMemberName.trim(), newMemberEmail.trim(), newMemberPhone.trim());
+            setNewMemberName('');
+            setNewMemberEmail('');
+            setNewMemberPhone('');
+        }
+    };
+
     return (
     <>
         {editingDay && <EditScheduleModal day={editingDay} allMembers={allMembers} onClose={() => setEditingDay(null)} onSave={handleSaveDay} />}
+        <QRCodeModal isOpen={isQrOpen} onClose={() => setIsQrOpen(false)} url={window.location.origin + window.location.pathname} />
         
         <ConfirmationModal
             isOpen={isPdfConfirmOpen}
@@ -421,14 +454,23 @@ const AdminView: React.FC<AdminViewProps> = ({
         <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-200">Painel do Administrador</h2>
-                <button
-                    onClick={() => setIsPdfConfirmOpen(true)}
-                    disabled={isSavingPdf}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400"
-                >
-                    <PdfIcon className="w-5 h-5"/>
-                    {isSavingPdf ? 'Salvando...' : 'Salvar como PDF'}
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsQrOpen(true)}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors"
+                    >
+                        <QrCodeIcon className="w-5 h-5"/>
+                        QR Code
+                    </button>
+                    <button
+                        onClick={() => setIsPdfConfirmOpen(true)}
+                        disabled={isSavingPdf}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400"
+                    >
+                        <PdfIcon className="w-5 h-5"/>
+                        {isSavingPdf ? 'Salvando...' : 'Salvar como PDF'}
+                    </button>
+                </div>
             </div>
             
              <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
@@ -485,6 +527,55 @@ const AdminView: React.FC<AdminViewProps> = ({
 
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
                 <h3 className="text-lg sm:text-xl font-bold mb-4 dark:text-slate-200">Gerenciar Membros</h3>
+                
+                 {/* New Member Form - ADDED HERE */}
+                <form onSubmit={handleAddNewMember} className="mb-6 bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wider">Cadastrar Novo Membro</h4>
+                    
+                    {addMemberError && (
+                        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 text-sm rounded">
+                            {addMemberError}
+                        </div>
+                    )}
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input
+                            type="text"
+                            placeholder="Nome Completo"
+                            required
+                            value={newMemberName}
+                            onChange={(e) => setNewMemberName(e.target.value)}
+                            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-700 dark:text-white"
+                        />
+                        <input
+                            type="email"
+                            placeholder="E-mail"
+                            required
+                            value={newMemberEmail}
+                            onChange={(e) => {
+                                setNewMemberEmail(e.target.value);
+                                if (addMemberError) setAddMemberError(null);
+                            }}
+                            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-700 dark:text-white"
+                        />
+                        <div className="flex gap-2">
+                             <input
+                                type="text"
+                                placeholder="Telefone (Opcional)"
+                                value={newMemberPhone}
+                                onChange={(e) => setNewMemberPhone(e.target.value)}
+                                className="flex-grow px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-700 dark:text-white"
+                            />
+                            <button
+                                type="submit"
+                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                                <PlusIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
                 <div className="max-h-96 overflow-y-auto pr-2">
                     <ul className="divide-y divide-slate-200 dark:divide-slate-700">
                         {allMembers.map(member => (

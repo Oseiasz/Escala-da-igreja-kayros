@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { Schedule, Member, ScheduleDay, ScheduleParticipant } from '../types';
 import Avatar from './Avatar';
 import PushNotificationManager from './PushNotificationManager';
-import { PdfIcon, CalendarIcon, ListBulletIcon, KeyIcon, MusicalNoteIcon } from './icons';
+import { PdfIcon, CalendarIcon, ListBulletIcon, KeyIcon, MusicalNoteIcon, QrCodeIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import SchedulePDFView from './SchedulePDFView';
 import ConfirmationModal from './ConfirmationModal';
 import Calendar from './Calendar';
+import QRCodeModal from './QRCodeModal';
 
 interface UserViewProps {
   schedule: Schedule;
@@ -38,6 +39,7 @@ const ParticipantChip: React.FC<{ participant: ScheduleParticipant, onMemberClic
 const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUser, onUpdateAvatar, onMemberClick, scheduleName, viewDate, onNavigateDate, onDateClick }) => {
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isPdfConfirmOpen, setIsPdfConfirmOpen] = useState(false);
+  const [isQrOpen, setIsQrOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   const handleSavePdf = async () => {
@@ -59,6 +61,8 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUse
 
   return (
     <>
+        <QRCodeModal isOpen={isQrOpen} onClose={() => setIsQrOpen(false)} url={window.location.origin + window.location.pathname} />
+
         <ConfirmationModal
             isOpen={isPdfConfirmOpen}
             onClose={() => setIsPdfConfirmOpen(false)}
@@ -98,6 +102,14 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUse
                                 <ListBulletIcon className="w-5 h-5" />
                             </button>
                         </div>
+                        
+                        <button
+                            onClick={() => setIsQrOpen(true)}
+                            className="inline-flex items-center justify-center p-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors"
+                            title="QR Code para Celular"
+                        >
+                            <QrCodeIcon className="w-4 h-4" />
+                        </button>
 
                         <button
                             onClick={() => setIsPdfConfirmOpen(true)}
