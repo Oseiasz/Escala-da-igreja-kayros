@@ -1,6 +1,7 @@
 import React from 'react';
 import { Member, ScheduleDay, ScheduleParticipant } from '../types';
-import { CloseIcon, UserIcon } from './icons';
+import { CloseIcon, UserIcon, KeyIcon, MusicalNoteIcon } from './icons';
+import Avatar from './Avatar';
 
 interface ScheduleDetailModalProps {
   isOpen: boolean;
@@ -10,28 +11,35 @@ interface ScheduleDetailModalProps {
   onMemberClick: (member: Member) => void;
 }
 
+const DetailParticipantChip: React.FC<{ participant: ScheduleParticipant, variant: 'blue' | 'green', onMemberClick: (m: Member) => void }> = ({ participant, variant, onMemberClick }) => {
+    const colorClasses = variant === 'blue'
+        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300'
+        : 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300';
+
+    return (
+        <div className={`inline-flex items-center gap-2 border rounded-full p-1 pr-3 shadow-sm ${colorClasses}`}>
+            {participant.isRegistered && participant.memberData ? (
+                <button onClick={() => onMemberClick(participant.memberData!)} className="flex items-center gap-2 focus:outline-none">
+                     <Avatar member={participant.memberData} className="w-6 h-6 text-[0.6rem]"/>
+                     <span className="text-xs font-semibold hover:underline">
+                         {participant.name.split(' ')[0]}
+                     </span>
+                </button>
+            ) : (
+                <div className="flex items-center gap-2">
+                     <div className="w-6 h-6 bg-white/60 dark:bg-slate-600 rounded-full flex items-center justify-center">
+                        <UserIcon className="w-3 h-3 opacity-70" />
+                    </div>
+                    <span className="text-xs font-semibold">{participant.name.split(' ')[0]}</span>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({ isOpen, onClose, date, daySchedule, onMemberClick }) => {
   if (!isOpen || !date || !daySchedule) return null;
-
-  const renderMemberList = (participants: ScheduleParticipant[]) => (
-    <ul className="space-y-1">
-        {participants.map(p => (
-            <li key={p.id} className="flex items-center gap-2">
-                <UserIcon className="w-4 h-4 text-slate-400"/>
-                 {p.isRegistered && p.memberData ? (
-                    <button
-                        onClick={() => onMemberClick(p.memberData!)}
-                        className="text-left text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
-                    >
-                        {p.name}
-                    </button>
-                 ) : (
-                    <span className="text-slate-800 dark:text-slate-200">{p.name}</span>
-                 )}
-            </li>
-        ))}
-    </ul>
-  );
 
   const formattedDate = date.toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -68,19 +76,44 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({ isOpen, onClo
             </div>
         </div>
         
-        <div className="p-6 space-y-4">
-            <div>
-                <h4 className="font-semibold text-slate-600 dark:text-slate-300 mb-2">Porteiros:</h4>
-                {daySchedule.doorkeepers.length > 0 ? (
-                    renderMemberList(daySchedule.doorkeepers)
-                ) : <p className="text-slate-500 dark:text-slate-400 italic">Ninguém escalado</p>}
-            </div>
-            <div>
-                <h4 className="font-semibold text-slate-600 dark:text-slate-300 mb-2">Cantores (Harpa):</h4>
-                {daySchedule.hymnSingers.length > 0 ? (
-                    renderMemberList(daySchedule.hymnSingers)
-                ) : <p className="text-slate-500 dark:text-slate-400 italic">Ninguém escalado</p>}
-            </div>
+        <div className="p-6 space-y-5">
+             {/* Doorkeepers */}
+             <div className="flex items-start gap-3">
+                 <div className="mt-1.5 p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-full text-blue-600 dark:text-blue-400" title="Porteiros">
+                     <KeyIcon className="w-5 h-5" />
+                 </div>
+                 <div className="flex-1">
+                     <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Porteiros</h4>
+                     <div className="flex flex-wrap gap-2">
+                        {daySchedule.doorkeepers.length > 0 ? (
+                            daySchedule.doorkeepers.map(p => (
+                                <DetailParticipantChip key={p.id} participant={p} variant="blue" onMemberClick={onMemberClick} />
+                            ))
+                        ) : (
+                            <span className="text-sm text-slate-400 dark:text-slate-500 italic">Ninguém escalado</span>
+                        )}
+                     </div>
+                 </div>
+             </div>
+
+             {/* Singers */}
+             <div className="flex items-start gap-3">
+                 <div className="mt-1.5 p-1.5 bg-green-100 dark:bg-green-900/50 rounded-full text-green-600 dark:text-green-400" title="Cantores">
+                     <MusicalNoteIcon className="w-5 h-5" />
+                 </div>
+                 <div className="flex-1">
+                     <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Cantores</h4>
+                     <div className="flex flex-wrap gap-2">
+                        {daySchedule.hymnSingers.length > 0 ? (
+                            daySchedule.hymnSingers.map(p => (
+                                <DetailParticipantChip key={p.id} participant={p} variant="green" onMemberClick={onMemberClick} />
+                            ))
+                        ) : (
+                            <span className="text-sm text-slate-400 dark:text-slate-500 italic">Ninguém escalado</span>
+                        )}
+                     </div>
+                 </div>
+             </div>
         </div>
         
         <div className="bg-slate-50 dark:bg-slate-900 px-6 py-3 rounded-b-lg text-right">

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Schedule, ScheduleDay, Member, ScheduleGroup, ScheduleParticipant } from '../types';
-import { PdfIcon, EditIcon, TrashIcon, AdminIcon, PhoneIcon, CheckIcon, CloseIcon, UserIcon } from './icons';
+import { PdfIcon, EditIcon, TrashIcon, AdminIcon, PhoneIcon, CheckIcon, CloseIcon, UserIcon, KeyIcon, MusicalNoteIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import MultiSelect from './MultiSelect';
 import ConfirmationModal from './ConfirmationModal';
@@ -120,53 +120,71 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
   );
 };
 
-const AdminMemberList: React.FC<{ members: ScheduleParticipant[] }> = ({ members }) => {
-    if (members.length === 0) {
-        return <p className="text-sm text-slate-500 dark:text-slate-400 italic">Ninguém escalado.</p>;
-    }
+const ParticipantChip: React.FC<{ participant: ScheduleParticipant, variant: 'blue' | 'green' }> = ({ participant, variant }) => {
+    const colorClasses = variant === 'blue'
+        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300'
+        : 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300';
+
     return (
-        <ul className="space-y-2">
-            {members.map(participant => (
-                <li key={participant.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                     {participant.isRegistered && participant.memberData ? (
-                        <Avatar member={participant.memberData} className="w-5 h-5"/>
-                    ) : (
-                        <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
-                            <UserIcon className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                        </div>
-                    )}
-                    <span>{participant.name}</span>
-                </li>
-            ))}
-        </ul>
+        <div className={`inline-flex items-center gap-1.5 border rounded-full p-0.5 pr-2 shadow-sm ${colorClasses}`}>
+            {participant.isRegistered && participant.memberData ? (
+                <Avatar member={participant.memberData} className="w-5 h-5 text-[0.55rem]"/>
+            ) : (
+                <div className="w-5 h-5 bg-white/60 dark:bg-slate-600 rounded-full flex items-center justify-center">
+                    <UserIcon className="w-3 h-3 opacity-70" />
+                </div>
+            )}
+            <span className="text-[11px] font-semibold truncate max-w-[85px]">
+                {participant.name.split(' ')[0]}
+            </span>
+        </div>
     );
 };
 
 const AdminScheduleCard: React.FC<{ day: ScheduleDay, onEdit: (day: ScheduleDay) => void }> = ({ day, onEdit }) => {
     return (
         <div className={`rounded-lg p-3 sm:p-4 border ${day.active ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'}`}>
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start mb-3">
                 <div>
                     <h3 className={`font-bold text-lg ${day.active ? 'text-slate-800 dark:text-slate-100' : ''}`}>{day.dayName}</h3>
-                    {day.active && <p className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold mb-3">{day.event}</p>}
+                    {day.active && <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wider">{day.event}</p>}
                 </div>
                 <button onClick={() => onEdit(day)} className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" aria-label={`Editar ${day.dayName}`}>
                     <EditIcon className="w-5 h-5" />
                 </button>
             </div>
             {day.active ? (
-                <div className="space-y-3 mt-1">
-                    <div>
-                        <h4 className="font-semibold text-sm text-slate-600 dark:text-slate-400 mb-1">Porteiros</h4>
-                        <AdminMemberList members={day.doorkeepers} />
+                <div className="space-y-3">
+                    {/* Row for Doorkeepers */}
+                    <div className="flex items-start gap-2">
+                         <div className="mt-1" title="Porteiros">
+                             <KeyIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                         </div>
+                         <div className="flex flex-wrap gap-1.5 flex-1">
+                             {day.doorkeepers.length > 0 ? (
+                                 day.doorkeepers.map(p => <ParticipantChip key={p.id} participant={p} variant="blue" />)
+                             ) : (
+                                 <span className="text-xs text-slate-400 italic mt-0.5">Vazio</span>
+                             )}
+                         </div>
                     </div>
-                    <div>
-                        <h4 className="font-semibold text-sm text-slate-600 dark:text-slate-400 mb-1">Cantores (Harpa)</h4>
-                        <AdminMemberList members={day.hymnSingers} />
+
+                    {/* Row for Singers */}
+                    <div className="flex items-start gap-2">
+                        <div className="mt-1" title="Cantores">
+                            <MusicalNoteIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 flex-1">
+                            {day.hymnSingers.length > 0 ? (
+                                day.hymnSingers.map(p => <ParticipantChip key={p.id} participant={p} variant="green" />)
+                            ) : (
+                                <span className="text-xs text-slate-400 italic mt-0.5">Vazio</span>
+                            )}
+                        </div>
                     </div>
                 </div>
             ) : (
-                <p className="text-sm italic mt-4">Dia inativo</p>
+                <p className="text-sm italic">Dia inativo</p>
             )}
         </div>
     );
@@ -229,9 +247,11 @@ const AdminView: React.FC<AdminViewProps> = ({
             }
         }
         
-        onUpdateSchedule(prevSchedule => 
-            prevSchedule.map(day => day.id === updatedDay.id ? updatedDay : day)
-        );
+        // CORRECTION: Create the new array and pass it directly.
+        // The parent component expects the value, not a callback.
+        const updatedSchedule = schedule.map(day => day.id === updatedDay.id ? updatedDay : day);
+        onUpdateSchedule(updatedSchedule);
+        
         setEditingDay(null);
     }, [schedule, onUpdateSchedule, allMembers]);
     

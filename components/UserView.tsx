@@ -1,11 +1,13 @@
+
 import React, { useState } from 'react';
 import { Schedule, Member, ScheduleDay, ScheduleParticipant } from '../types';
 import Avatar from './Avatar';
 import PushNotificationManager from './PushNotificationManager';
-import { PdfIcon, UserIcon } from './icons';
+import { PdfIcon, CalendarIcon, ListBulletIcon, KeyIcon, MusicalNoteIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import SchedulePDFView from './SchedulePDFView';
 import ConfirmationModal from './ConfirmationModal';
+import Calendar from './Calendar';
 
 interface UserViewProps {
   schedule: Schedule;
@@ -14,67 +16,29 @@ interface UserViewProps {
   onUpdateAvatar: (memberId: string, avatarDataUrl: string) => void;
   onMemberClick: (member: Member) => void;
   scheduleName: string;
+  viewDate: Date;
+  onNavigateDate: (newDate: Date) => void;
+  onDateClick: (date: Date, daySchedule: ScheduleDay | undefined) => void;
 }
 
-const MemberList: React.FC<{ members: ScheduleParticipant[]; onMemberClick: (member: Member) => void }> = ({ members, onMemberClick }) => {
-    if (members.length === 0) {
-        return <p className="text-sm text-slate-500 dark:text-slate-400 italic">Ninguém escalado.</p>;
-    }
+const ParticipantChip: React.FC<{ participant: ScheduleParticipant, onMemberClick: (m: Member) => void }> = ({ participant, onMemberClick }) => {
     return (
-        <ul className="space-y-2">
-            {members.map(participant => (
-                <li key={participant.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                    {participant.isRegistered && participant.memberData ? (
-                        <>
-                            <Avatar member={participant.memberData} className="w-6 h-6"/>
-                            <button 
-                                onClick={() => onMemberClick(participant.memberData!)}
-                                className="hover:underline hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none rounded"
-                            >
-                                {participant.name}
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <div className="w-6 h-6 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
-                                <UserIcon className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                            </div>
-                            <span>{participant.name}</span>
-                        </>
-                    )}
-                </li>
-            ))}
-        </ul>
-    );
-};
-
-const ScheduleCard: React.FC<{ day: ScheduleDay, onMemberClick: (member: Member) => void }> = ({ day, onMemberClick }) => {
-    return (
-        <div className={`rounded-lg p-3 sm:p-4 border ${day.active ? 'bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm' : 'bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400'}`}>
-            <h3 className={`font-bold text-lg ${day.active ? 'text-slate-800 dark:text-slate-100' : ''}`}>{day.dayName}</h3>
-            {day.active && <p className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold mb-3">{day.event}</p>}
-            
-            {day.active ? (
-                <div className="space-y-3 mt-1">
-                    <div>
-                        <h4 className="font-semibold text-sm text-slate-600 dark:text-slate-400 mb-1">Porteiros</h4>
-                        <MemberList members={day.doorkeepers} onMemberClick={onMemberClick} />
-                    </div>
-                    <div>
-                        <h4 className="font-semibold text-sm text-slate-600 dark:text-slate-400 mb-1">Cantores (Harpa)</h4>
-                        <MemberList members={day.hymnSingers} onMemberClick={onMemberClick} />
-                    </div>
-                </div>
-            ) : (
-                <p className="text-sm italic mt-4">Dia inativo</p>
-            )}
+        <div 
+            onClick={() => participant.memberData && onMemberClick(participant.memberData)}
+            className={`inline-flex items-center gap-1.5 p-1 pr-2.5 rounded-full border shadow-sm transition-all ${participant.memberData ? 'bg-white hover:bg-slate-50 dark:bg-slate-700 dark:hover:bg-slate-600 border-slate-200 dark:border-slate-600 cursor-pointer' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-70 cursor-default'}`}
+        >
+            <Avatar member={participant.memberData || null} className="w-5 h-5 text-[0.6rem]" />
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-200 max-w-[100px] truncate">
+                {participant.name.split(' ')[0]}
+            </span>
         </div>
     );
 };
 
-const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUser, onUpdateAvatar, onMemberClick, scheduleName }) => {
+const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUser, onUpdateAvatar, onMemberClick, scheduleName, viewDate, onNavigateDate, onDateClick }) => {
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isPdfConfirmOpen, setIsPdfConfirmOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   const handleSavePdf = async () => {
       setIsSavingPdf(true);
@@ -115,21 +79,89 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUse
         <div className="space-y-6 sm:space-y-8">
             <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-                    <h2 className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-200 sm:text-left text-center">Escala da Semana</h2>
-                    <button
-                        onClick={() => setIsPdfConfirmOpen(true)}
-                        disabled={isSavingPdf}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400"
-                    >
-                        <PdfIcon className="w-5 h-5"/>
-                        {isSavingPdf ? 'Salvando...' : 'Salvar como PDF'}
-                    </button>
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-200 sm:text-left text-center">Calendário de Escala</h2>
+                    
+                    <div className="flex items-center gap-3 self-center sm:self-auto">
+                        <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                            <button
+                                onClick={() => setViewMode('calendar')}
+                                className={`p-2 rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                title="Visualização em Calendário"
+                            >
+                                <CalendarIcon className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                title="Visualização em Lista"
+                            >
+                                <ListBulletIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setIsPdfConfirmOpen(true)}
+                            disabled={isSavingPdf}
+                            className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400"
+                        >
+                            <PdfIcon className="w-4 h-4"/>
+                            <span className="hidden sm:inline">PDF</span>
+                        </button>
+                    </div>
                  </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {schedule.map(day => (
-                        <ScheduleCard key={day.id} day={day} onMemberClick={onMemberClick} />
-                    ))}
-                 </div>
+                 
+                 {viewMode === 'calendar' ? (
+                     <Calendar
+                        viewDate={viewDate}
+                        schedule={schedule}
+                        onNavigate={onNavigateDate}
+                        onDateClick={onDateClick}
+                        onMemberClick={onMemberClick}
+                     />
+                 ) : (
+                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {schedule.filter(d => d.active).map(day => (
+                            <div key={day.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
+                                <div className="border-b border-slate-200 dark:border-slate-700 pb-2">
+                                    <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{day.dayName}</h3>
+                                    <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">{day.event}</p>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <div>
+                                        <div className="flex items-center gap-1.5 mb-1.5 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                                            <KeyIcon className="w-3.5 h-3.5" /> Porteiros
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {day.doorkeepers.length > 0 ? (
+                                                day.doorkeepers.map(p => <ParticipantChip key={p.id} participant={p} onMemberClick={onMemberClick} />)
+                                            ) : (
+                                                <span className="text-xs text-slate-400 italic">Vazio</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-1.5 mb-1.5 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                                            <MusicalNoteIcon className="w-3.5 h-3.5" /> Cantores
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {day.hymnSingers.length > 0 ? (
+                                                day.hymnSingers.map(p => <ParticipantChip key={p.id} participant={p} onMemberClick={onMemberClick} />)
+                                            ) : (
+                                                <span className="text-xs text-slate-400 italic">Vazio</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {schedule.filter(d => d.active).length === 0 && (
+                            <div className="col-span-full text-center py-8 text-slate-500 dark:text-slate-400 italic">
+                                Nenhuma escala ativa configurada para visualização.
+                            </div>
+                        )}
+                     </div>
+                 )}
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">

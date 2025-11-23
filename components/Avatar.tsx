@@ -41,6 +41,7 @@ const Avatar: React.FC<AvatarProps> = ({ member, className = 'w-10 h-10' }) => {
       if (!isNaN(widthUnit)) {
           // w-10 is 2.5rem, so font size should be ~1rem (ratio 2.5)
           // w-24 is 6rem, so font size should be ~2.4rem (ratio 2.5)
+          // w-6 is 1.5rem (24px). Font size should be ~0.6rem (10px).
           fontSizeRem = (widthUnit * 0.25) / 2.5;
       }
   }

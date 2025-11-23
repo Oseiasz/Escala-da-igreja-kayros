@@ -12,15 +12,18 @@ const registerServiceWorker = () => {
         console.log('Service Worker registrado com sucesso:', registration.scope);
       })
       .catch(error => {
-        console.error('Falha ao registrar o Service Worker:', error);
+        // Silently fail if document is invalid state to avoid console noise in some environments
+        console.log('Service Worker registration skipped or failed:', error);
       });
   }
 };
 
-// Registra o Service Worker após a página carregar completamente.
-// Esta é a abordagem mais simples e robusta, garantindo que o documento
-// esteja em um estado válido.
-window.addEventListener('load', registerServiceWorker);
+// Registra o Service Worker de forma segura
+if (document.readyState === 'complete') {
+  registerServiceWorker();
+} else {
+  window.addEventListener('load', registerServiceWorker);
+}
 
 
 const rootElement = document.getElementById('root');

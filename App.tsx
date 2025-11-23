@@ -84,26 +84,43 @@ const App: React.FC = () => {
 
   const [scheduleGroups, setScheduleGroups] = useState<ScheduleGroup[]>(() => {
       const saved = localStorage.getItem('churchScheduleGroups');
-      return saved ? JSON.parse(saved) : INITIAL_SCHEDULE_GROUPS;
+      try {
+          const parsed = saved ? JSON.parse(saved) : null;
+          if (Array.isArray(parsed)) return parsed;
+          return INITIAL_SCHEDULE_GROUPS;
+      } catch (e) {
+          console.error("Failed to parse schedule groups:", e);
+          return INITIAL_SCHEDULE_GROUPS;
+      }
   });
 
   const [activeScheduleGroupId, setActiveScheduleGroupId] = useState<string>(() => {
       const saved = localStorage.getItem('activeChurchScheduleGroupId');
-      // Ensure the saved ID still exists, otherwise default to the first group
-      if (saved && scheduleGroups.some(g => g.id === saved)) {
+      // Ensure the saved ID still exists and scheduleGroups is an array
+      if (saved && Array.isArray(scheduleGroups) && scheduleGroups.some(g => g.id === saved)) {
           return saved;
       }
-      return scheduleGroups[0]?.id || '';
+      return (Array.isArray(scheduleGroups) && scheduleGroups[0]?.id) || '';
   });
 
   const [allMembers, setAllMembers] = useState<Member[]>(() => {
     const saved = localStorage.getItem('churchMembers');
-    return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+    try {
+        const parsed = saved ? JSON.parse(saved) : null;
+        return Array.isArray(parsed) ? parsed : INITIAL_MEMBERS;
+    } catch (e) {
+        return INITIAL_MEMBERS;
+    }
   });
 
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('churchUsers');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    try {
+        const parsed = saved ? JSON.parse(saved) : null;
+        return Array.isArray(parsed) ? parsed : INITIAL_USERS;
+    } catch (e) {
+        return INITIAL_USERS;
+    }
   });
 
   const [notification, setNotification] = useState<string | null>(null);
@@ -113,12 +130,18 @@ const App: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<Member | null>(null);
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<{ date: Date; daySchedule: ScheduleDay } | null>(null);
+  const [viewDate, setViewDate] = useState(new Date());
 
-  const activeScheduleGroup = useMemo(() => 
-    scheduleGroups.find(g => g.id === activeScheduleGroupId) || scheduleGroups[0],
-  [scheduleGroups, activeScheduleGroupId]);
+  const activeScheduleGroup = useMemo(() => {
+    if (!Array.isArray(scheduleGroups)) return undefined;
+    return scheduleGroups.find(g => g.id === activeScheduleGroupId) || scheduleGroups[0];
+  }, [scheduleGroups, activeScheduleGroupId]);
 
-  const activeSchedule = useMemo(() => activeScheduleGroup?.schedule || [], [activeScheduleGroup]);
+  const activeSchedule = useMemo(() => {
+      const s = activeScheduleGroup?.schedule;
+      return Array.isArray(s) ? s : [];
+  }, [activeScheduleGroup]);
+  
   const activeAnnouncements = useMemo(() => activeScheduleGroup?.announcements || '', [activeScheduleGroup]);
 
 
@@ -169,13 +192,19 @@ const App: React.FC = () => {
   useEffect(() => {
     const syncFromStorage = (e: StorageEvent) => {
       if (e.key === 'churchMembers' && e.newValue) {
-        setAllMembers(JSON.parse(e.newValue));
+        try {
+            setAllMembers(JSON.parse(e.newValue));
+        } catch(err) {}
       }
       if (e.key === 'churchUsers' && e.newValue) {
-        setUsers(JSON.parse(e.newValue));
+        try {
+            setUsers(JSON.parse(e.newValue));
+        } catch(err) {}
       }
       if (e.key === 'churchScheduleGroups' && e.newValue) {
-        setScheduleGroups(JSON.parse(e.newValue));
+        try {
+            setScheduleGroups(JSON.parse(e.newValue));
+        } catch(err) {}
       }
       if (e.key === 'activeChurchScheduleGroupId' && e.newValue) {
         setActiveScheduleGroupId(e.newValue);
@@ -430,6 +459,12 @@ const App: React.FC = () => {
     setSelectedTaskDetail({ date: nextDate, daySchedule: day });
   };
   
+  const handleDateClick = (date: Date, daySchedule: ScheduleDay | undefined) => {
+    if (daySchedule?.active) {
+        setSelectedTaskDetail({ date, daySchedule });
+    }
+  };
+
   const handleSetActiveSchedule = (newSchedule: Schedule) => {
     setScheduleGroups(prev => prev.map(group => 
         group.id === activeScheduleGroupId ? { ...group, schedule: newSchedule } : group
@@ -454,10 +489,11 @@ const App: React.FC = () => {
   };
 
   const handleDeleteScheduleGroup = (id: string) => {
-      setScheduleGroups(prev => prev.filter(group => group.id !== id));
+      const remainingGroups = scheduleGroups.filter(group => group.id !== id);
+      setScheduleGroups(remainingGroups);
       // If the deleted group was the active one, switch to the first available group
       if (activeScheduleGroupId === id) {
-          setActiveScheduleGroupId(scheduleGroups[0]?.id || '');
+          setActiveScheduleGroupId(remainingGroups[0]?.id || '');
       }
   };
 
@@ -525,6 +561,9 @@ const App: React.FC = () => {
             onUpdateAvatar={handleUpdateAvatar}
             onMemberClick={setViewingProfile}
             scheduleName={activeScheduleGroup?.name || ''}
+            viewDate={viewDate}
+            onNavigateDate={setViewDate}
+            onDateClick={handleDateClick}
           />
         )}
       </main>

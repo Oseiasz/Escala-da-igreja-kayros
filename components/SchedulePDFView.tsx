@@ -7,83 +7,171 @@ interface SchedulePDFViewProps {
   scheduleName: string;
 }
 
-const PDFMemberList: React.FC<{ members: ScheduleParticipant[] }> = ({ members }) => {
-    if (members.length === 0) {
-        return <span style={{ fontStyle: 'italic', color: '#666' }}>Ninguém escalado.</span>;
-    }
+const PDFParticipantList: React.FC<{ title: string; members: ScheduleParticipant[]; color: string }> = ({ title, members, color }) => {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {members.map(member => (
-                <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '12px' }}>{member.name}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+            <h4 style={{ 
+                fontSize: '9px', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.5px', 
+                color: '#64748b', // slate-500
+                marginBottom: '4px',
+                borderBottom: `1px solid ${color}40`, // Low opacity border
+                paddingBottom: '2px',
+                fontWeight: 'bold'
+            }}>
+                {title}
+            </h4>
+            {members.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    {members.map(member => (
+                        <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '10px', color: '#334155', fontWeight: 500 }}>• {member.name}</span>
+                        </div>
+                    ))}
                 </div>
-            ))}
+            ) : (
+                <span style={{ fontSize: '10px', color: '#94a3b8', fontStyle: 'italic' }}>-</span>
+            )}
         </div>
     );
 };
 
-
 const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcements, scheduleName }) => {
   const today = new Date();
   const formattedDate = today.toLocaleDateString('pt-BR', {
-    year: 'numeric',
-    month: 'long',
     day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
+
+  const activeDays = schedule.filter(day => day.active);
 
   return (
     <div 
       id="pdf-content" 
       style={{ 
-        width: '780px', 
-        padding: '20px', 
-        fontFamily: 'Arial, sans-serif', 
-        color: '#333',
+        width: '794px', // Standard A4 width at 96dpi (approx)
+        minHeight: '1123px', // A4 height
+        padding: '30px 40px', 
+        fontFamily: 'Inter, Helvetica, Arial, sans-serif', 
         backgroundColor: '#ffffff',
-        lineHeight: '1.5'
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      <div style={{ textAlign: 'center', borderBottom: '2px solid #333', paddingBottom: '10px' }}>
-        <h1 style={{ fontSize: '24px', margin: 0 }}>Escala Semanal - {scheduleName}</h1>
-        <p style={{ fontSize: '14px', margin: '5px 0 0' }}>Gerado em: {formattedDate}</p>
+      {/* Header Minimalista */}
+      <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-end', 
+          borderBottom: '2px solid #0f172a', // slate-900
+          paddingBottom: '15px',
+          marginBottom: '25px'
+      }}>
+        <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
+                {scheduleName}
+            </h1>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0', fontWeight: 500 }}>
+                Escala Semanal de Trabalho
+            </p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: '10px', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '1px' }}>Gerado em</span>
+            <span style={{ fontSize: '12px', color: '#334155', fontWeight: 600 }}>{formattedDate}</span>
+        </div>
       </div>
 
-      <div style={{ marginTop: '20px' }}>
-        {schedule.filter(day => day.active).map(day => (
-          <div key={day.id} style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '15px', marginBottom: '15px', pageBreakInside: 'avoid' }}>
-            <h2 style={{ fontSize: '18px', margin: '0 0 5px 0', color: '#000' }}>{day.dayName}</h2>
-            <p style={{ fontSize: '14px', color: '#4F46E5', margin: '0 0 15px 0', fontWeight: 'bold' }}>{day.event}</p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '14px', margin: '0 0 8px 0', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>Porteiros</h3>
-                <PDFMemberList members={day.doorkeepers} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '14px', margin: '0 0 8px 0', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>Cantores (Harpa)</h3>
-                <PDFMemberList members={day.hymnSingers} />
-              </div>
+      {/* Grid de Dias - Layout 2 Colunas */}
+      <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '15px', 
+          alignContent: 'flex-start',
+          flex: 1 // Push footer down
+      }}>
+        {activeDays.map(day => (
+          <div key={day.id} style={{ 
+              width: 'calc(50% - 8px)', // 2 colunas com gap
+              border: '1px solid #e2e8f0', // slate-200
+              borderRadius: '6px',
+              backgroundColor: '#f8fafc', // slate-50
+              overflow: 'hidden',
+              pageBreakInside: 'avoid'
+          }}>
+            {/* Card Header */}
+            <div style={{ 
+                padding: '8px 12px', 
+                borderBottom: '1px solid #e2e8f0',
+                backgroundColor: '#ffffff',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+                    {day.dayName}
+                </h3>
+                <span style={{ fontSize: '10px', fontWeight: '600', color: '#4f46e5', backgroundColor: '#eef2ff', padding: '2px 6px', borderRadius: '4px' }}>
+                    {day.event}
+                </span>
+            </div>
+
+            {/* Card Body */}
+            <div style={{ padding: '10px 12px', display: 'flex', gap: '15px' }}>
+               <PDFParticipantList 
+                    title="Porteiros" 
+                    members={day.doorkeepers} 
+                    color="#3b82f6" // blue
+               />
+               <div style={{ width: '1px', backgroundColor: '#cbd5e1' }}></div>
+               <PDFParticipantList 
+                    title="Cantores" 
+                    members={day.hymnSingers} 
+                    color="#22c55e" // green
+               />
             </div>
           </div>
         ))}
       </div>
 
+      {/* Avisos - Rodapé Fixo ou ao final */}
       {announcements && (
-        <div style={{ marginTop: '25px', pageBreakInside: 'avoid' }}>
-            <h2 style={{ fontSize: '18px', textAlign: 'center', borderBottom: '1px solid #ccc', paddingBottom: '8px', marginBottom: '15px' }}>Quadro de Avisos</h2>
+        <div style={{ marginTop: 'auto', paddingTop: '20px', pageBreakInside: 'avoid' }}>
             <div style={{ 
-                whiteSpace: 'pre-wrap', 
-                wordWrap: 'break-word',
-                padding: '15px', 
-                backgroundColor: '#FFFBEB', 
-                borderLeft: '4px solid #FBBF24',
-                color: '#92400E',
-                fontSize: '14px',
-                borderRadius: '4px'
+                backgroundColor: '#fffbeb', // amber-50
+                border: '1px solid #fcd34d', // amber-300
+                borderRadius: '6px',
+                padding: '15px',
+                position: 'relative'
             }}>
-            {announcements}
+                <h3 style={{ 
+                    fontSize: '11px', 
+                    textTransform: 'uppercase', 
+                    fontWeight: 'bold', 
+                    color: '#b45309', // amber-700
+                    margin: '0 0 8px 0',
+                    letterSpacing: '0.5px'
+                }}>
+                    Quadro de Avisos
+                </h3>
+                <div style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    color: '#451a03', // amber-950
+                    fontSize: '11px',
+                    lineHeight: '1.5'
+                }}>
+                    {announcements}
+                </div>
             </div>
         </div>
       )}
+      
+      {/* Footer Branding */}
+      <div style={{ marginTop: '15px', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+           <p style={{ fontSize: '9px', color: '#cbd5e1' }}>Escala da Igreja</p>
+      </div>
     </div>
   );
 };
