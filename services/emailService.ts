@@ -1,3 +1,4 @@
+
 import { Member, ScheduleDay } from '../types';
 import emailjs from '@emailjs/browser';
 
@@ -29,11 +30,12 @@ const sendEmail = async (toEmail: string, toName: string, subject: string, messa
     return;
   }
 
+  // Mapeamento exato para as variáveis do template no EmailJS
   const templateParams = {
     to_email: toEmail,
     to_name: toName,
-    subject: subject,
-    message: message,
+    assunto: subject, // Mapeia 'subject' do código para '{{assunto}}' no template
+    mensagem: message, // Mapeia 'message' do código para '{{mensagem}}' no template
   };
 
   try {
@@ -41,7 +43,7 @@ const sendEmail = async (toEmail: string, toName: string, subject: string, messa
     console.log(`E-mail enviado com sucesso para ${toEmail}`);
   } catch (error) {
     console.error('ERRO AO ENVIAR EMAIL:', error);
-    // Fallback: mostrar no console caso dê erro na API (ex: quota excedida ou erro de conexão)
+    // Fallback: mostrar no console caso dê erro na API
     console.log('--- FALHA NO ENVIO (CONTEÚDO) ---');
     console.log(`Para: ${toEmail}`);
     console.log(message);

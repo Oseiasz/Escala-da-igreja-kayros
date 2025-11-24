@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Schedule, Member, User, ScheduleDay, ScheduleGroup, ScheduleParticipant } from './types';
 import AdminView from './components/AdminView';
@@ -125,7 +126,20 @@ const App: React.FC = () => {
   });
 
   const [notification, setNotification] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<Member | null>(null);
+
+  // Initialize currentUser from local storage immediately to prevent flicker/redirect
+  const [currentUser, setCurrentUser] = useState<Member | null>(() => {
+    const activeUserId = localStorage.getItem('churchApp_activeUserId');
+    if (activeUserId) {
+        // We need to read from localStorage directly because state updates for allMembers might not be ready
+        const savedMembers = localStorage.getItem('churchMembers');
+        const membersList = savedMembers ? JSON.parse(savedMembers) : INITIAL_MEMBERS;
+        const member = membersList.find((m: Member) => m.id === activeUserId);
+        return member || null;
+    }
+    return null;
+  });
+
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgotPassword' | 'resetPassword'>('login');
   const [resetEmail, setResetEmail] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -220,21 +234,9 @@ const App: React.FC = () => {
 
 
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedUserEmail');
-    if (rememberedEmail) {
-        const userAccount = users.find(u => u.email === rememberedEmail);
-        if (userAccount) {
-            const memberProfile = allMembers.find(m => m.id === userAccount.memberId);
-            if (memberProfile) {
-                setCurrentUser(memberProfile);
-            }
-        }
-    }
-  }, [users, allMembers]);
-
-  useEffect(() => {
     if (!currentUser) {
-        setNotification(null);
+        // Only clear general notifications, keep toast notifications for login/signup feedback if needed in future
+        // But for now, we only show notifications when logged in or as transient toasts
         return;
     }
     const dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -263,7 +265,9 @@ const App: React.FC = () => {
                     body: message
                 }
             });
-            setNotification(null);
+            // We don't clear notification here to allow in-app viewing if they missed push
+            // But usually push replaces in-app. Let's keep in-app as fallback.
+             setNotification(message);
         } else {
             setNotification(message);
         }
@@ -282,6 +286,8 @@ const App: React.FC = () => {
         const memberProfile = allMembers.find(m => m.id === userAccount.memberId);
         if (memberProfile) {
             setCurrentUser(memberProfile);
+            localStorage.setItem('churchApp_activeUserId', memberProfile.id);
+            // We keep rememberedUserEmail for filling the email field on logout, but session is handled by activeUserId
             if (rememberMe) {
                 localStorage.setItem('rememberedUserEmail', email);
             } else {
@@ -295,6 +301,8 @@ const App: React.FC = () => {
   }, [users, allMembers]);
 
   const handleSignUp = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
+    // Note: We use 'users' from props for validation, but use functional updates for setters
+    // to ensure we don't use stale state when writing to storage.
     if (users.some(u => u.email === email)) {
         return { success: false, message: 'Este e-mail já está sendo usado por outra conta. Se você já se cadastrou, tente fazer login.' };
     }
@@ -303,27 +311,33 @@ const App: React.FC = () => {
     const newMember: Member = { id: newMemberId, name, email, phone: '', role: 'member' };
     const newUser: User = { email, password, memberId: newMemberId };
 
-    const updatedMembers = [...allMembers, newMember];
-    const updatedUsers = [...users, newUser];
-
     try {
-        localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
-        localStorage.setItem('churchUsers', JSON.stringify(updatedUsers));
-        
-        setAllMembers(updatedMembers);
-        setUsers(updatedUsers);
-        setCurrentUser(newMember);
+        setAllMembers(currentMembers => {
+            const updatedMembers = [...currentMembers, newMember];
+            localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
+            return updatedMembers;
+        });
 
+        setUsers(currentUsers => {
+            const updatedUsers = [...currentUsers, newUser];
+            localStorage.setItem('churchUsers', JSON.stringify(updatedUsers));
+            return updatedUsers;
+        });
+        
+        setCurrentUser(newMember);
+        localStorage.setItem('churchApp_activeUserId', newMember.id);
         localStorage.setItem('rememberedUserEmail', email);
         
+        // Send email and notify user
         sendWelcomeEmail(email, name);
+        setNotification('Bem-vindo(a)! Um e-mail de confirmação foi enviado para você.');
         
         return { success: true };
     } catch (e) {
         console.error("Database save failed", e);
         return { success: false, message: 'Não foi possível salvar seus dados. Verifique o espaço de armazenamento do seu navegador.' };
     }
-  }, [users, allMembers]);
+  }, [users]); // Dependency on users is needed for the email check
   
   const handleAddMember = useCallback((name: string, email: string, phone: string) => {
       const newMember: Member = {
@@ -334,12 +348,17 @@ const App: React.FC = () => {
           role: 'member'
       };
       
-      const updatedMembers = [...allMembers, newMember];
-      localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
-      setAllMembers(updatedMembers);
+      setAllMembers(currentMembers => {
+          const updatedMembers = [...currentMembers, newMember];
+          localStorage.setItem('churchMembers', JSON.stringify(updatedMembers));
+          return updatedMembers;
+      });
       
+      // Send email and notify admin
       sendWelcomeEmail(email, name);
-  }, [allMembers]);
+      setNotification(`Membro adicionado! Um convite foi enviado para ${email}.`);
+
+  }, []); // No dependencies needed with functional updates
 
   const handleForgotPasswordRequest = useCallback(async (email: string): Promise<{ success: boolean; message?: string }> => {
     if (users.some(u => u.email === email)) {
@@ -370,7 +389,8 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
       setCurrentUser(null);
-      localStorage.removeItem('rememberedUserEmail');
+      localStorage.removeItem('churchApp_activeUserId');
+      // We do not remove rememberedUserEmail so the field is pre-filled
       window.location.hash = '#/';
   };
   
