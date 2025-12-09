@@ -1,6 +1,7 @@
-import React, { useMemo, useRef } from 'react';
+
+import React, { useMemo, useRef, useState } from 'react';
 import { Member, Schedule } from '../types';
-import { CloseIcon, PhoneIcon, MailIcon, EditIcon } from './icons';
+import { CloseIcon, PhoneIcon, MailIcon, CameraIcon } from './icons';
 import Avatar from './Avatar';
 
 interface ProfileModalProps {
@@ -11,8 +12,55 @@ interface ProfileModalProps {
   onUpdateAvatar: (memberId: string, avatarDataUrl: string) => void;
 }
 
+// Helper function to resize and compress images to prevent localStorage overflow
+const resizeAndCompressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (readerEvent) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const MAX_WIDTH = 300;
+                const MAX_HEIGHT = 300;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // Compress to JPEG at 70% quality to save space
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    resolve(dataUrl);
+                } else {
+                    reject(new Error('Canvas context not available'));
+                }
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = readerEvent.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+};
+
 const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, currentUser, onUpdateAvatar }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
   if (!member) return null;
   
   const isCurrentUser = currentUser?.id === member.id;
@@ -92,27 +140,29 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (file && member) {
-          const MAX_SIZE_MB = 2;
-          if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-              alert(`O arquivo é muito grande. O tamanho máximo permitido é ${MAX_SIZE_MB}MB.`);
-              event.target.value = '';
+          // Check for image type
+          if (!file.type.startsWith('image/')) {
+              alert('Por favor, selecione um arquivo de imagem válido.');
               return;
           }
-
-          const reader = new FileReader();
-          reader.onload = (loadEvent) => {
-              const result = loadEvent.target?.result;
-              if (typeof result === 'string') {
-                  onUpdateAvatar(member.id, result);
-              }
-          };
-          reader.readAsDataURL(file);
+          
+          setIsProcessing(true);
+          try {
+             // Resize and compress the image before saving
+             const compressedDataUrl = await resizeAndCompressImage(file);
+             onUpdateAvatar(member.id, compressedDataUrl);
+          } catch (error) {
+             console.error('Erro ao processar imagem:', error);
+             alert('Ocorreu um erro ao processar a imagem. Tente novamente com outra foto.');
+          } finally {
+             setIsProcessing(false);
+             // Reset input
+             if (event.target) event.target.value = '';
+          }
       }
-      // Reset the input value to allow re-uploading the same file
-      event.target.value = '';
   };
 
 
@@ -137,16 +187,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
                 <CloseIcon className="w-5 h-5" />
             </button>
             <div className="flex flex-col items-center">
-                <div className="relative w-24 h-24 mb-4">
+                <div className="relative w-24 h-24 mb-4 group">
                     <Avatar member={member} className="w-24 h-24" />
                      {isCurrentUser && (
                         <>
                             <button
                                 onClick={handleAvatarClick}
-                                className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-700 p-2 rounded-full shadow-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600"
+                                disabled={isProcessing}
+                                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10"
                                 aria-label="Alterar foto do perfil"
                             >
-                                <EditIcon className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                                <CameraIcon className="w-8 h-8 text-white drop-shadow-md" />
+                            </button>
+                            <button
+                                onClick={handleAvatarClick}
+                                className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-700 p-2 rounded-full shadow-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600 sm:hidden z-20"
+                            >
+                                <CameraIcon className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                             </button>
                             <input
                                 type="file"
@@ -156,6 +213,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
                                 style={{ display: 'none' }}
                             />
                         </>
+                    )}
+                    {isProcessing && (
+                         <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 rounded-full z-30">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                         </div>
                     )}
                 </div>
                 <h3 id="profile-modal-title" className="text-2xl font-bold text-slate-800 dark:text-slate-100 text-center">{member.name}</h3>

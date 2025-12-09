@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Schedule, Member, ScheduleDay, ScheduleParticipant } from '../types';
 import Avatar from './Avatar';
 import PushNotificationManager from './PushNotificationManager';
-import { PdfIcon, CalendarIcon, ListBulletIcon, KeyIcon, MusicalNoteIcon, QrCodeIcon } from './icons';
+import { PdfIcon, CalendarIcon, ListBulletIcon, KeyIcon, MusicalNoteIcon, QrCodeIcon, MicrophoneIcon, BookOpenIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import SchedulePDFView from './SchedulePDFView';
 import ConfirmationModal from './ConfirmationModal';
@@ -140,6 +140,30 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUse
                                 </div>
                                 
                                 <div className="space-y-3">
+                                    {/* Worship Leader */}
+                                    {(day.worshipLeaders && day.worshipLeaders.length > 0) && (
+                                        <div>
+                                            <div className="flex items-center gap-1.5 mb-1.5 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                                                <MicrophoneIcon className="w-3.5 h-3.5" /> Dirigente
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {day.worshipLeaders.map(p => <ParticipantChip key={p.id} participant={p} onMemberClick={onMemberClick} />)}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Preacher */}
+                                    {(day.preachers && day.preachers.length > 0) && (
+                                        <div>
+                                            <div className="flex items-center gap-1.5 mb-1.5 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                                                <BookOpenIcon className="w-3.5 h-3.5" /> Pregador(a)
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {day.preachers.map(p => <ParticipantChip key={p.id} participant={p} onMemberClick={onMemberClick} />)}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div>
                                         <div className="flex items-center gap-1.5 mb-1.5 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                                             <KeyIcon className="w-3.5 h-3.5" /> Porteiros

@@ -46,13 +46,13 @@ const memberToParticipant = (member: Member): ScheduleParticipant => ({
 });
 
 const BLANK_SCHEDULE: Schedule = [
-    { id: 'd1', dayName: 'Domingo', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-    { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-    { id: 'd3', dayName: 'Terça-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-    { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-    { id: 'd5', dayName: 'Quinta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-    { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-    { id: 'd7', dayName: 'Sábado', event: '', active: false, doorkeepers: [], hymnSingers: [] },
+    { id: 'd1', dayName: 'Domingo', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd3', dayName: 'Terça-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd5', dayName: 'Quinta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd7', dayName: 'Sábado', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
 ];
 
 const INITIAL_SCHEDULE_GROUPS: ScheduleGroup[] = [
@@ -60,13 +60,13 @@ const INITIAL_SCHEDULE_GROUPS: ScheduleGroup[] = [
         id: 'group_sede',
         name: 'Sede',
         schedule: [
-            { id: 'd1', dayName: 'Domingo', event: 'Culto de Celebração', active: true, doorkeepers: [INITIAL_MEMBERS[0], INITIAL_MEMBERS[1]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[3], INITIAL_MEMBERS[5]].map(memberToParticipant) },
-            { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-            { id: 'd3', dayName: 'Terça-feira', event: 'Culto de Ensino', active: true, doorkeepers: [INITIAL_MEMBERS[2]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[4]].map(memberToParticipant) },
-            { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-            { id: 'd5', dayName: 'Quinta-feira', event: 'Círculo de Oração', active: true, doorkeepers: [INITIAL_MEMBERS[4], INITIAL_MEMBERS[6]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[1]].map(memberToParticipant) },
-            { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [] },
-            { id: 'd7', dayName: 'Sábado', event: 'Ensaio do Louvor', active: true, doorkeepers: [], hymnSingers: [INITIAL_MEMBERS[3], INITIAL_MEMBERS[5], INITIAL_MEMBERS[4]].map(memberToParticipant) },
+            { id: 'd1', dayName: 'Domingo', event: 'Culto de Celebração', active: true, doorkeepers: [INITIAL_MEMBERS[0], INITIAL_MEMBERS[1]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[3], INITIAL_MEMBERS[5]].map(memberToParticipant), worshipLeaders: [INITIAL_MEMBERS[2]].map(memberToParticipant), preachers: [INITIAL_MEMBERS[6]].map(memberToParticipant) },
+            { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+            { id: 'd3', dayName: 'Terça-feira', event: 'Culto de Ensino', active: true, doorkeepers: [INITIAL_MEMBERS[2]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[4]].map(memberToParticipant), worshipLeaders: [INITIAL_MEMBERS[1]].map(memberToParticipant), preachers: [] },
+            { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+            { id: 'd5', dayName: 'Quinta-feira', event: 'Círculo de Oração', active: true, doorkeepers: [INITIAL_MEMBERS[4], INITIAL_MEMBERS[6]].map(memberToParticipant), hymnSingers: [INITIAL_MEMBERS[1]].map(memberToParticipant), worshipLeaders: [], preachers: [] },
+            { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+            { id: 'd7', dayName: 'Sábado', event: 'Ensaio do Louvor', active: true, doorkeepers: [], hymnSingers: [INITIAL_MEMBERS[3], INITIAL_MEMBERS[5], INITIAL_MEMBERS[4]].map(memberToParticipant), worshipLeaders: [], preachers: [] },
         ],
         announcements: `Bem-vindo ao nosso quadro de avisos!
 - Próximo sábado teremos um café da manhã especial.
@@ -88,7 +88,17 @@ const App: React.FC = () => {
       const saved = localStorage.getItem('churchScheduleGroups');
       try {
           const parsed = saved ? JSON.parse(saved) : null;
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed)) {
+            // Ensure compatibility with older saves that might miss new fields
+            return parsed.map((group: ScheduleGroup) => ({
+                ...group,
+                schedule: group.schedule.map((day: any) => ({
+                    ...day,
+                    worshipLeaders: day.worshipLeaders || [],
+                    preachers: day.preachers || [],
+                }))
+            }));
+          }
           return INITIAL_SCHEDULE_GROUPS;
       } catch (e) {
           console.error("Failed to parse schedule groups:", e);
@@ -235,8 +245,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!currentUser) {
-        // Only clear general notifications, keep toast notifications for login/signup feedback if needed in future
-        // But for now, we only show notifications when logged in or as transient toasts
         return;
     }
     const dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -248,13 +256,17 @@ const App: React.FC = () => {
     if (tomorrowSchedule && tomorrowSchedule.active) {
       const isDoorkeeper = tomorrowSchedule.doorkeepers.some(m => m.id === currentUser.id);
       const isSinger = tomorrowSchedule.hymnSingers.some(m => m.id === currentUser.id);
+      const isLeader = tomorrowSchedule.worshipLeaders?.some(m => m.id === currentUser.id);
+      const isPreacher = tomorrowSchedule.preachers?.some(m => m.id === currentUser.id);
 
-      if (isDoorkeeper || isSinger) {
+      if (isDoorkeeper || isSinger || isLeader || isPreacher) {
         let tasks: string[] = [];
         if (isDoorkeeper) tasks.push("Porteiro(a)");
         if (isSinger) tasks.push("Cantor(a)");
+        if (isLeader) tasks.push("Dirigente");
+        if (isPreacher) tasks.push("Pregador(a)");
         
-        const message = `Você está escalado como ${tasks.join(' e ')} amanhã (${activeScheduleGroup?.name}).`;
+        const message = `Você está escalado como ${tasks.join(', ')} amanhã (${activeScheduleGroup?.name}).`;
         const pushEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
 
         if (pushEnabled && 'Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -265,8 +277,6 @@ const App: React.FC = () => {
                     body: message
                 }
             });
-            // We don't clear notification here to allow in-app viewing if they missed push
-            // But usually push replaces in-app. Let's keep in-app as fallback.
              setNotification(message);
         } else {
             setNotification(message);
@@ -287,7 +297,6 @@ const App: React.FC = () => {
         if (memberProfile) {
             setCurrentUser(memberProfile);
             localStorage.setItem('churchApp_activeUserId', memberProfile.id);
-            // We keep rememberedUserEmail for filling the email field on logout, but session is handled by activeUserId
             if (rememberMe) {
                 localStorage.setItem('rememberedUserEmail', email);
             } else {
@@ -296,13 +305,10 @@ const App: React.FC = () => {
             return { success: true };
         }
     }
-    // Updated generic error to specific friendly message
     return { success: false, message: 'Ops! E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.' };
   }, [users, allMembers]);
 
   const handleSignUp = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
-    // Note: We use 'users' from props for validation, but use functional updates for setters
-    // to ensure we don't use stale state when writing to storage.
     if (users.some(u => u.email === email)) {
         return { success: false, message: 'Este e-mail já está sendo usado por outra conta. Se você já se cadastrou, tente fazer login.' };
     }
@@ -328,7 +334,6 @@ const App: React.FC = () => {
         localStorage.setItem('churchApp_activeUserId', newMember.id);
         localStorage.setItem('rememberedUserEmail', email);
         
-        // Send email and notify user
         sendWelcomeEmail(email, name);
         setNotification('Bem-vindo(a)! Um e-mail de confirmação foi enviado para você.');
         
@@ -337,7 +342,7 @@ const App: React.FC = () => {
         console.error("Database save failed", e);
         return { success: false, message: 'Não foi possível salvar seus dados. Verifique o espaço de armazenamento do seu navegador.' };
     }
-  }, [users]); // Dependency on users is needed for the email check
+  }, [users]);
   
   const handleAddMember = useCallback((name: string, email: string, phone: string) => {
       const newMember: Member = {
@@ -354,11 +359,10 @@ const App: React.FC = () => {
           return updatedMembers;
       });
       
-      // Send email and notify admin
       sendWelcomeEmail(email, name);
       setNotification(`Membro adicionado! Um convite foi enviado para ${email}.`);
 
-  }, []); // No dependencies needed with functional updates
+  }, []);
 
   const handleForgotPasswordRequest = useCallback(async (email: string): Promise<{ success: boolean; message?: string }> => {
     if (users.some(u => u.email === email)) {
@@ -390,7 +394,6 @@ const App: React.FC = () => {
   const handleLogout = () => {
       setCurrentUser(null);
       localStorage.removeItem('churchApp_activeUserId');
-      // We do not remove rememberedUserEmail so the field is pre-filled
       window.location.hash = '#/';
   };
   
@@ -403,6 +406,8 @@ const App: React.FC = () => {
                 ...day,
                 doorkeepers: day.doorkeepers.filter(p => p.id !== memberId),
                 hymnSingers: day.hymnSingers.filter(p => p.id !== memberId),
+                worshipLeaders: day.worshipLeaders?.filter(p => p.id !== memberId) || [],
+                preachers: day.preachers?.filter(p => p.id !== memberId) || [],
             })),
         }));
     
@@ -446,6 +451,8 @@ const App: React.FC = () => {
                 ...day,
                 doorkeepers: day.doorkeepers.map(p => p.id === updatedMember.id ? { ...p, name: updatedMember.name, memberData: updatedMember } : p),
                 hymnSingers: day.hymnSingers.map(p => p.id === updatedMember.id ? { ...p, name: updatedMember.name, memberData: updatedMember } : p),
+                worshipLeaders: day.worshipLeaders?.map(p => p.id === updatedMember.id ? { ...p, name: updatedMember.name, memberData: updatedMember } : p) || [],
+                preachers: day.preachers?.map(p => p.id === updatedMember.id ? { ...p, name: updatedMember.name, memberData: updatedMember } : p) || [],
             })),
         }))
     );
@@ -478,6 +485,18 @@ const App: React.FC = () => {
                     }
                     return p;
                 }),
+                worshipLeaders: day.worshipLeaders?.map(p => {
+                    if (p.id === memberId && p.memberData) {
+                        return { ...p, memberData: { ...p.memberData, avatar: avatarDataUrl } };
+                    }
+                    return p;
+                }) || [],
+                preachers: day.preachers?.map(p => {
+                    if (p.id === memberId && p.memberData) {
+                        return { ...p, memberData: { ...p.memberData, avatar: avatarDataUrl } };
+                    }
+                    return p;
+                }) || [],
             })),
         }))
     );

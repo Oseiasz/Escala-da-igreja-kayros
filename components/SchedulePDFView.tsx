@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Schedule, ScheduleParticipant } from '../types';
 
@@ -9,29 +10,29 @@ interface SchedulePDFViewProps {
 
 const PDFParticipantList: React.FC<{ title: string; members: ScheduleParticipant[]; color: string }> = ({ title, members, color }) => {
     return (
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, paddingBottom: '4px' }}>
             <h4 style={{ 
-                fontSize: '9px', 
+                fontSize: '8px', 
                 textTransform: 'uppercase', 
                 letterSpacing: '0.5px', 
                 color: '#64748b', // slate-500
-                marginBottom: '4px',
+                marginBottom: '2px',
                 borderBottom: `1px solid ${color}40`, // Low opacity border
-                paddingBottom: '2px',
+                paddingBottom: '1px',
                 fontWeight: 'bold'
             }}>
                 {title}
             </h4>
-            {members.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {members && members.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                     {members.map(member => (
-                        <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '10px', color: '#334155', fontWeight: 500 }}>• {member.name}</span>
+                        <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <span style={{ fontSize: '9px', color: '#334155', fontWeight: 500 }}>• {member.name.split(' ').slice(0, 2).join(' ')}</span>
                         </div>
                     ))}
                 </div>
             ) : (
-                <span style={{ fontSize: '10px', color: '#94a3b8', fontStyle: 'italic' }}>-</span>
+                <span style={{ fontSize: '9px', color: '#94a3b8', fontStyle: 'italic' }}>-</span>
             )}
         </div>
     );
@@ -68,7 +69,7 @@ const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcemen
           alignItems: 'flex-end', 
           borderBottom: '2px solid #0f172a', // slate-900
           paddingBottom: '15px',
-          marginBottom: '25px'
+          marginBottom: '20px'
       }}>
         <div>
             <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
@@ -88,22 +89,24 @@ const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcemen
       <div style={{ 
           display: 'flex', 
           flexWrap: 'wrap', 
-          gap: '15px', 
+          gap: '12px', 
           alignContent: 'flex-start',
           flex: 1 // Push footer down
       }}>
         {activeDays.map(day => (
           <div key={day.id} style={{ 
-              width: 'calc(50% - 8px)', // 2 colunas com gap
+              width: 'calc(50% - 6px)', // 2 colunas com gap
               border: '1px solid #e2e8f0', // slate-200
               borderRadius: '6px',
               backgroundColor: '#f8fafc', // slate-50
               overflow: 'hidden',
-              pageBreakInside: 'avoid'
+              pageBreakInside: 'avoid',
+              display: 'flex',
+              flexDirection: 'column'
           }}>
             {/* Card Header */}
             <div style={{ 
-                padding: '8px 12px', 
+                padding: '6px 10px', 
                 borderBottom: '1px solid #e2e8f0',
                 backgroundColor: '#ffffff',
                 display: 'flex',
@@ -118,19 +121,40 @@ const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcemen
                 </span>
             </div>
 
-            {/* Card Body */}
-            <div style={{ padding: '10px 12px', display: 'flex', gap: '15px' }}>
-               <PDFParticipantList 
-                    title="Porteiros" 
-                    members={day.doorkeepers} 
-                    color="#3b82f6" // blue
-               />
-               <div style={{ width: '1px', backgroundColor: '#cbd5e1' }}></div>
-               <PDFParticipantList 
-                    title="Cantores" 
-                    members={day.hymnSingers} 
-                    color="#22c55e" // green
-               />
+            {/* Card Body - Grid 2x2 Layout for Roles */}
+            <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                
+                {/* Top Row: Dirigente & Pregador */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <PDFParticipantList 
+                        title="Dirigente" 
+                        members={day.worshipLeaders || []} 
+                        color="#a855f7" // purple
+                    />
+                     <div style={{ width: '1px', backgroundColor: '#e2e8f0' }}></div>
+                    <PDFParticipantList 
+                        title="Pregador(a)" 
+                        members={day.preachers || []} 
+                        color="#f97316" // orange
+                    />
+                </div>
+
+                <div style={{ height: '1px', backgroundColor: '#e2e8f0' }}></div>
+
+                {/* Bottom Row: Porteiros & Cantores */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                   <PDFParticipantList 
+                        title="Porteiros" 
+                        members={day.doorkeepers} 
+                        color="#3b82f6" // blue
+                   />
+                   <div style={{ width: '1px', backgroundColor: '#e2e8f0' }}></div>
+                   <PDFParticipantList 
+                        title="Cantores" 
+                        members={day.hymnSingers} 
+                        color="#22c55e" // green
+                   />
+                </div>
             </div>
           </div>
         ))}
@@ -138,20 +162,20 @@ const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcemen
 
       {/* Avisos - Rodapé Fixo ou ao final */}
       {announcements && (
-        <div style={{ marginTop: 'auto', paddingTop: '20px', pageBreakInside: 'avoid' }}>
+        <div style={{ marginTop: 'auto', paddingTop: '15px', pageBreakInside: 'avoid' }}>
             <div style={{ 
                 backgroundColor: '#fffbeb', // amber-50
                 border: '1px solid #fcd34d', // amber-300
                 borderRadius: '6px',
-                padding: '15px',
+                padding: '12px',
                 position: 'relative'
             }}>
                 <h3 style={{ 
-                    fontSize: '11px', 
+                    fontSize: '10px', 
                     textTransform: 'uppercase', 
                     fontWeight: 'bold', 
                     color: '#b45309', // amber-700
-                    margin: '0 0 8px 0',
+                    margin: '0 0 6px 0',
                     letterSpacing: '0.5px'
                 }}>
                     Quadro de Avisos
@@ -159,8 +183,8 @@ const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcemen
                 <div style={{ 
                     whiteSpace: 'pre-wrap', 
                     color: '#451a03', // amber-950
-                    fontSize: '11px',
-                    lineHeight: '1.5'
+                    fontSize: '10px',
+                    lineHeight: '1.4'
                 }}>
                     {announcements}
                 </div>
@@ -169,7 +193,7 @@ const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcemen
       )}
       
       {/* Footer Branding */}
-      <div style={{ marginTop: '15px', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+      <div style={{ marginTop: '10px', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
            <p style={{ fontSize: '9px', color: '#cbd5e1' }}>Escala da Igreja</p>
       </div>
     </div>

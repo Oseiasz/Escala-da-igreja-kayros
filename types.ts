@@ -1,3 +1,4 @@
+
 export interface Member {
   id: string;
   name: string;
@@ -27,6 +28,8 @@ export interface ScheduleDay {
   event: string;
   doorkeepers: ScheduleParticipant[];
   hymnSingers: ScheduleParticipant[];
+  worshipLeaders: ScheduleParticipant[];
+  preachers: ScheduleParticipant[];
   active: boolean;
 }
 

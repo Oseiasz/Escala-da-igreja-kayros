@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Member, ScheduleDay, ScheduleParticipant } from '../types';
-import { CloseIcon, UserIcon, KeyIcon, MusicalNoteIcon } from './icons';
+import { CloseIcon, UserIcon, KeyIcon, MusicalNoteIcon, MicrophoneIcon, BookOpenIcon } from './icons';
 import Avatar from './Avatar';
 
 interface ScheduleDetailModalProps {
@@ -11,10 +12,22 @@ interface ScheduleDetailModalProps {
   onMemberClick: (member: Member) => void;
 }
 
-const DetailParticipantChip: React.FC<{ participant: ScheduleParticipant, variant: 'blue' | 'green', onMemberClick: (m: Member) => void }> = ({ participant, variant, onMemberClick }) => {
-    const colorClasses = variant === 'blue'
-        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300'
-        : 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300';
+const DetailParticipantChip: React.FC<{ participant: ScheduleParticipant, variant: 'blue' | 'green' | 'purple' | 'orange', onMemberClick: (m: Member) => void }> = ({ participant, variant, onMemberClick }) => {
+    let colorClasses = '';
+    switch(variant) {
+        case 'blue':
+            colorClasses = 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300';
+            break;
+        case 'green':
+            colorClasses = 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300';
+            break;
+        case 'purple':
+            colorClasses = 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300';
+            break;
+        case 'orange':
+            colorClasses = 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-300';
+            break;
+    }
 
     return (
         <div className={`inline-flex items-center gap-2 border rounded-full p-1 pr-3 shadow-sm ${colorClasses}`}>
@@ -77,6 +90,40 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({ isOpen, onClo
         </div>
         
         <div className="p-6 space-y-5">
+             {/* Worship Leader */}
+             {(daySchedule.worshipLeaders && daySchedule.worshipLeaders.length > 0) && (
+                <div className="flex items-start gap-3">
+                    <div className="mt-1.5 p-1.5 bg-purple-100 dark:bg-purple-900/50 rounded-full text-purple-600 dark:text-purple-400" title="Dirigente">
+                        <MicrophoneIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Dirigente</h4>
+                        <div className="flex flex-wrap gap-2">
+                             {daySchedule.worshipLeaders.map(p => (
+                                   <DetailParticipantChip key={p.id} participant={p} variant="purple" onMemberClick={onMemberClick} />
+                               ))}
+                        </div>
+                    </div>
+                </div>
+             )}
+
+             {/* Preacher */}
+             {(daySchedule.preachers && daySchedule.preachers.length > 0) && (
+                 <div className="flex items-start gap-3">
+                     <div className="mt-1.5 p-1.5 bg-orange-100 dark:bg-orange-900/50 rounded-full text-orange-600 dark:text-orange-400" title="Pregador">
+                         <BookOpenIcon className="w-5 h-5" />
+                     </div>
+                     <div className="flex-1">
+                         <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Pregador(a)</h4>
+                         <div className="flex flex-wrap gap-2">
+                             {daySchedule.preachers.map(p => (
+                                   <DetailParticipantChip key={p.id} participant={p} variant="orange" onMemberClick={onMemberClick} />
+                               ))}
+                         </div>
+                     </div>
+                 </div>
+             )}
+
              {/* Doorkeepers */}
              <div className="flex items-start gap-3">
                  <div className="mt-1.5 p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-full text-blue-600 dark:text-blue-400" title="Porteiros">

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Schedule, ScheduleDay, Member } from '../types';
 import { ChevronLeftIcon, ChevronRightIcon, UserIcon, EditIcon } from './icons';
@@ -109,7 +110,9 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
                             {isCurrentMonth && hasActiveEvent && (
                                 <div className="mt-1 text-center">
                                      <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-300 truncate">{daySchedule?.event}</p>
-                                     <div className="flex justify-center mt-1.5 gap-1">
+                                     <div className="flex justify-center mt-1.5 gap-1 flex-wrap">
+                                         {daySchedule?.worshipLeaders && daySchedule.worshipLeaders.length > 0 && <div className="w-1.5 h-1.5 bg-purple-400 rounded-full" title="Dirigente"></div>}
+                                         {daySchedule?.preachers && daySchedule.preachers.length > 0 && <div className="w-1.5 h-1.5 bg-orange-400 rounded-full" title="Pregador"></div>}
                                          {daySchedule?.doorkeepers.length > 0 && <div className="w-1.5 h-1.5 bg-blue-400 rounded-full" title="Porteiros"></div>}
                                          {daySchedule?.hymnSingers.length > 0 && <div className="w-1.5 h-1.5 bg-green-400 rounded-full" title="Cantores"></div>}
                                      </div>

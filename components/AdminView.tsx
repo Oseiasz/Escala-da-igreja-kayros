@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Schedule, ScheduleDay, Member, ScheduleGroup, ScheduleParticipant } from '../types';
-import { PdfIcon, EditIcon, TrashIcon, AdminIcon, PhoneIcon, CheckIcon, CloseIcon, UserIcon, KeyIcon, MusicalNoteIcon, PlusIcon, QrCodeIcon } from './icons';
+import { PdfIcon, EditIcon, TrashIcon, AdminIcon, PhoneIcon, CheckIcon, CloseIcon, UserIcon, KeyIcon, MusicalNoteIcon, PlusIcon, QrCodeIcon, MicrophoneIcon, BookOpenIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import MultiSelect from './MultiSelect';
 import ConfirmationModal from './ConfirmationModal';
@@ -40,7 +40,11 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
 
   useEffect(() => {
     if (day) {
-      setEditedDay({ ...day });
+      setEditedDay({ 
+          ...day,
+          worshipLeaders: day.worshipLeaders || [],
+          preachers: day.preachers || []
+      });
     } else {
       setEditedDay(null);
     }
@@ -53,6 +57,8 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
         if(!editedDay.active){
             editedDay.doorkeepers = [];
             editedDay.hymnSingers = [];
+            editedDay.worshipLeaders = [];
+            editedDay.preachers = [];
             editedDay.event = "";
         }
         onSave(editedDay);
@@ -61,7 +67,7 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-full overflow-y-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <h3 className="text-xl font-bold mb-4 dark:text-slate-100">Editar Escala Padrão: {editedDay.dayName}</h3>
           
@@ -91,26 +97,41 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
             )}
             
             {editedDay.active && (
-                <div className="space-y-4 pt-4">
+                <div className="space-y-4 pt-4 border-t dark:border-slate-700">
+                    <MultiSelect
+                        label="Dirigente"
+                        allOptions={allMembers}
+                        selectedOptions={editedDay.worshipLeaders}
+                        onChange={(newSelection) => setEditedDay(prev => prev ? { ...prev, worshipLeaders: newSelection } : null)}
+                        placeholder="Adicionar dirigente..."
+                    />
+                     <MultiSelect
+                        label="Pregador(a)"
+                        allOptions={allMembers}
+                        selectedOptions={editedDay.preachers}
+                        onChange={(newSelection) => setEditedDay(prev => prev ? { ...prev, preachers: newSelection } : null)}
+                        placeholder="Adicionar pregador..."
+                    />
+                    <div className="border-t border-slate-100 dark:border-slate-700 my-2"></div>
                     <MultiSelect
                         label="Porteiros"
                         allOptions={allMembers}
                         selectedOptions={editedDay.doorkeepers}
                         onChange={(newSelection) => setEditedDay(prev => prev ? { ...prev, doorkeepers: newSelection } : null)}
-                        placeholder="Buscar ou adicionar porteiros..."
+                        placeholder="Adicionar porteiros..."
                     />
                     <MultiSelect
                         label="Cantores (Harpa)"
                         allOptions={allMembers}
                         selectedOptions={editedDay.hymnSingers}
                         onChange={(newSelection) => setEditedDay(prev => prev ? { ...prev, hymnSingers: newSelection } : null)}
-                        placeholder="Buscar ou adicionar cantores..."
+                        placeholder="Adicionar cantores..."
                     />
                 </div>
             )}
           </div>
         </div>
-        <div className="bg-gray-50 dark:bg-slate-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+        <div className="bg-gray-50 dark:bg-slate-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse sticky bottom-0 border-t dark:border-slate-700">
           <button onClick={handleSave} type="button" className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
             Salvar
           </button>
@@ -123,10 +144,23 @@ const EditScheduleModal: React.FC<EditModalProps> = ({ day, allMembers, onClose,
   );
 };
 
-const ParticipantChip: React.FC<{ participant: ScheduleParticipant, variant: 'blue' | 'green' }> = ({ participant, variant }) => {
-    const colorClasses = variant === 'blue'
-        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300'
-        : 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300';
+const ParticipantChip: React.FC<{ participant: ScheduleParticipant, variant: 'blue' | 'green' | 'purple' | 'orange' }> = ({ participant, variant }) => {
+    let colorClasses = '';
+    
+    switch(variant) {
+        case 'blue':
+            colorClasses = 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300';
+            break;
+        case 'green':
+            colorClasses = 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300';
+            break;
+        case 'purple':
+            colorClasses = 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300';
+            break;
+        case 'orange':
+            colorClasses = 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-300';
+            break;
+    }
 
     return (
         <div className={`inline-flex items-center gap-1.5 border rounded-full p-0.5 pr-2 shadow-sm ${colorClasses}`}>
@@ -158,6 +192,34 @@ const AdminScheduleCard: React.FC<{ day: ScheduleDay, onEdit: (day: ScheduleDay)
             </div>
             {day.active ? (
                 <div className="space-y-3">
+                     {/* Row for Leader */}
+                    <div className="flex items-start gap-2">
+                        <div className="mt-1" title="Dirigente">
+                            <MicrophoneIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 flex-1">
+                            {day.worshipLeaders && day.worshipLeaders.length > 0 ? (
+                                day.worshipLeaders.map(p => <ParticipantChip key={p.id} participant={p} variant="purple" />)
+                            ) : (
+                                <span className="text-xs text-slate-400 italic mt-0.5">Vazio</span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Row for Preacher */}
+                    <div className="flex items-start gap-2">
+                        <div className="mt-1" title="Pregador">
+                            <BookOpenIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 flex-1">
+                            {day.preachers && day.preachers.length > 0 ? (
+                                day.preachers.map(p => <ParticipantChip key={p.id} participant={p} variant="orange" />)
+                            ) : (
+                                <span className="text-xs text-slate-400 italic mt-0.5">Vazio</span>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Row for Doorkeepers */}
                     <div className="flex items-start gap-2">
                          <div className="mt-1" title="Porteiros">
@@ -240,6 +302,20 @@ const AdminView: React.FC<AdminViewProps> = ({
                 .forEach(participant => {
                     newAssignments.push({ member: participant, day: updatedDay, role: 'Cantor(a) (Harpa)' });
                 });
+
+            const originalLeaderIds = new Set((originalDay.worshipLeaders || []).map(p => p.id));
+            (updatedDay.worshipLeaders || [])
+                .filter(p => !originalLeaderIds.has(p.id))
+                .forEach(participant => {
+                    newAssignments.push({ member: participant, day: updatedDay, role: 'Dirigente' });
+                });
+
+            const originalPreacherIds = new Set((originalDay.preachers || []).map(p => p.id));
+            (updatedDay.preachers || [])
+                .filter(p => !originalPreacherIds.has(p.id))
+                .forEach(participant => {
+                    newAssignments.push({ member: participant, day: updatedDay, role: 'Pregador(a)' });
+                });
         }
 
         if (newAssignments.length > 0) {
@@ -257,8 +333,6 @@ const AdminView: React.FC<AdminViewProps> = ({
             }
         }
         
-        // CORRECTION: Create the new array and pass it directly.
-        // The parent component expects the value, not a callback.
         const updatedSchedule = schedule.map(day => day.id === updatedDay.id ? updatedDay : day);
         onUpdateSchedule(updatedSchedule);
         
@@ -356,7 +430,6 @@ const AdminView: React.FC<AdminViewProps> = ({
 
         const normalizedEmail = newMemberEmail.trim().toLowerCase();
         
-        // Check if email already exists
         const emailExists = allMembers.some(member => member.email.toLowerCase() === normalizedEmail);
         
         if (emailExists) {
@@ -528,7 +601,6 @@ const AdminView: React.FC<AdminViewProps> = ({
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg dark:shadow-slate-950/20">
                 <h3 className="text-lg sm:text-xl font-bold mb-4 dark:text-slate-200">Gerenciar Membros</h3>
                 
-                 {/* New Member Form - ADDED HERE */}
                 <form onSubmit={handleAddNewMember} className="mb-6 bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wider">Cadastrar Novo Membro</h4>
                     
@@ -604,9 +676,35 @@ const AdminView: React.FC<AdminViewProps> = ({
                                     </>
                                 ) : (
                                     <>
-                                        {member.id !== 'admin' && (<button onClick={() => handleStartEditMember(member)} className="p-2 text-slate-500 hover:text-indigo-600 rounded-full hover:bg-indigo-50" aria-label={`Editar ${member.name}`}><EditIcon className="w-5 h-5" /></button>)}
-                                        {currentUser.id !== member.id && member.id !== 'admin' && (<button onClick={() => setTogglingAdminFor(member)} className={`px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1.5 ${member.role === 'admin' ? 'text-amber-700 bg-amber-50' : 'text-indigo-700 bg-indigo-50'}`} aria-label={member.role === 'admin' ? `Remover admin de ${member.name}` : `Tornar ${member.name} admin`}><AdminIcon className="w-4 h-4" /> <span className="hidden sm:inline">{member.role === 'admin' ? 'Remover Admin' : 'Tornar Admin'}</span></button>)}
-                                        {member.id !== 'admin' && (<button onClick={() => setDeletingMember(member)} className="p-2 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-50 disabled:text-slate-300" aria-label={`Excluir ${member.name}`} disabled={member.role === 'admin'} title={member.role === 'admin' ? "Remova o cargo de 'Admin' para poder excluir" : ""}><TrashIcon className="w-5 h-5" /></button>)}
+                                        {member.id !== 'admin' && (
+                                            <button 
+                                                onClick={() => handleStartEditMember(member)} 
+                                                className="p-2 text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" 
+                                                aria-label="Editar"
+                                            >
+                                                <EditIcon className="w-5 h-5"/>
+                                            </button>
+                                        )}
+                                        
+                                        {member.id !== 'admin' && (
+                                             <button 
+                                                onClick={() => setTogglingAdminFor(member)} 
+                                                className={`p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 ${member.role === 'admin' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400'}`}
+                                                title={member.role === 'admin' ? "Remover Admin" : "Tornar Admin"}
+                                            >
+                                                <AdminIcon className="w-5 h-5"/>
+                                            </button>
+                                        )}
+
+                                        {member.id !== 'admin' && (
+                                            <button 
+                                                onClick={() => setDeletingMember(member)} 
+                                                className="p-2 text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" 
+                                                aria-label="Excluir"
+                                            >
+                                                <TrashIcon className="w-5 h-5"/>
+                                            </button>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -615,10 +713,9 @@ const AdminView: React.FC<AdminViewProps> = ({
                     </ul>
                 </div>
             </div>
-
         </div>
     </>
-  );
+    );
 };
 
 export default AdminView;
