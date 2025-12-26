@@ -1,8 +1,9 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { Member, Schedule } from '../types';
-import { CloseIcon, PhoneIcon, MailIcon, CameraIcon } from './icons';
+import { CloseIcon, PhoneIcon, MailIcon, CameraIcon, TrashIcon } from './icons';
 import Avatar from './Avatar';
+import ConfirmationModal from './ConfirmationModal';
 
 interface ProfileModalProps {
   member: Member | null;
@@ -10,6 +11,7 @@ interface ProfileModalProps {
   onClose: () => void;
   currentUser: Member | null;
   onUpdateAvatar: (memberId: string, avatarDataUrl: string) => void;
+  onDeleteAccount: (memberId: string) => void;
 }
 
 // Helper function to resize and compress images to prevent localStorage overflow
@@ -57,9 +59,10 @@ const resizeAndCompressImage = (file: File): Promise<string> => {
     });
 };
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, currentUser, onUpdateAvatar }) => {
+const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, currentUser, onUpdateAvatar, onDeleteAccount }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   if (!member) return null;
   
@@ -143,7 +146,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (file && member) {
-          // Check for image type
           if (!file.type.startsWith('image/')) {
               alert('Por favor, selecione um arquivo de imagem válido.');
               return;
@@ -151,7 +153,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
           
           setIsProcessing(true);
           try {
-             // Resize and compress the image before saving
              const compressedDataUrl = await resizeAndCompressImage(file);
              onUpdateAvatar(member.id, compressedDataUrl);
           } catch (error) {
@@ -159,36 +160,41 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
              alert('Ocorreu um erro ao processar a imagem. Tente novamente com outra foto.');
           } finally {
              setIsProcessing(false);
-             // Reset input
              if (event.target) event.target.value = '';
           }
       }
   };
 
+  const handleDeleteConfirm = () => {
+      onDeleteAccount(member.id);
+      setIsDeleteConfirmOpen(false);
+      onClose();
+  };
 
   return (
+    <>
     <div 
-        className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4" 
+        className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 backdrop-blur-sm" 
         onClick={onClose}
         role="dialog"
         aria-modal="true"
         aria-labelledby="profile-modal-title"
     >
       <div 
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm transform transition-all max-h-[90vh] flex flex-col"
+        className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm transform transition-all max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative p-6 border-b border-slate-200 dark:border-slate-700">
+        <div className="relative p-8 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20">
             <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 aria-label="Fechar perfil"
             >
                 <CloseIcon className="w-5 h-5" />
             </button>
             <div className="flex flex-col items-center">
-                <div className="relative w-24 h-24 mb-4 group">
-                    <Avatar member={member} className="w-24 h-24" />
+                <div className="relative w-28 h-28 mb-4 group">
+                    <Avatar member={member} className="w-28 h-28 shadow-xl" />
                      {isCurrentUser && (
                         <>
                             <button
@@ -198,12 +204,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
                                 aria-label="Alterar foto do perfil"
                             >
                                 <CameraIcon className="w-8 h-8 text-white drop-shadow-md" />
-                            </button>
-                            <button
-                                onClick={handleAvatarClick}
-                                className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-700 p-2 rounded-full shadow-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600 sm:hidden z-20"
-                            >
-                                <CameraIcon className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                             </button>
                             <input
                                 type="file"
@@ -220,11 +220,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
                          </div>
                     )}
                 </div>
-                <h3 id="profile-modal-title" className="text-2xl font-bold text-slate-800 dark:text-slate-100 text-center">{member.name}</h3>
+                <h3 id="profile-modal-title" className="text-2xl font-black text-slate-800 dark:text-slate-100 text-center">{member.name}</h3>
                 {memberRoles.length > 0 && (
                     <div className="flex flex-wrap justify-center gap-2 mt-3">
                         {memberRoles.map(role => (
-                            <span key={role} className="px-2.5 py-1 text-xs font-semibold text-indigo-800 bg-indigo-100 dark:text-indigo-200 dark:bg-indigo-900/50 rounded-full">
+                            <span key={role} className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/50 rounded-full">
                                 {role}
                             </span>
                         ))}
@@ -233,68 +233,81 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ member, schedule, onClose, 
             </div>
         </div>
 
-        <div className="px-6 py-4 space-y-5 overflow-y-auto">
+        <div className="px-8 py-6 space-y-6 overflow-y-auto custom-scrollbar">
              <div>
-                <h4 className="font-semibold text-slate-600 dark:text-slate-400 mb-2 text-sm">Contato</h4>
-                <div className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-                    <div className="flex items-center gap-3">
-                        <PhoneIcon className="w-5 h-5 text-slate-400" />
-                        <a href={`tel:${member.phone}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">{member.phone || 'Não informado'}</a>
+                <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-3 ml-1">Contato</h4>
+                <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <PhoneIcon className="w-5 h-5 text-indigo-500" />
+                        <a href={`tel:${member.phone}`} className="font-bold hover:text-indigo-600 dark:hover:text-indigo-400">{member.phone || 'Não informado'}</a>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <MailIcon className="w-5 h-5 text-slate-400" />
-                        <a href={`mailto:${member.email}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">{member.email}</a>
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <MailIcon className="w-5 h-5 text-indigo-500" />
+                        <a href={`mailto:${member.email}`} className="font-bold hover:text-indigo-600 dark:hover:text-indigo-400 truncate">{member.email}</a>
                     </div>
                 </div>
              </div>
 
              {upcomingTasks.length > 0 && (
                 <div>
-                    <h4 className="font-semibold text-slate-600 dark:text-slate-400 mb-2 text-sm">Próximas Tarefas</h4>
-                    <div className="space-y-2 text-sm">
+                    <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-3 ml-1">Próximas Tarefas</h4>
+                    <div className="space-y-2">
                         {upcomingTasks.map((task, index) => (
-                            <div key={index} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-700">
+                            <div key={index} className="flex justify-between items-center p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/50">
                                 <div>
-                                    <span className="font-medium text-slate-800 dark:text-slate-200">{task.dayLabel}</span>
-                                    <span className="text-slate-500 dark:text-slate-400 text-xs ml-2">({task.event})</span>
+                                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">{task.dayLabel}</span>
+                                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-medium uppercase tracking-tighter">{task.event}</p>
                                 </div>
-                                <span className="text-slate-600 dark:text-slate-300 font-semibold">{task.role}</span>
+                                <span className="text-indigo-600 dark:text-indigo-400 font-black text-xs uppercase">{task.role}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
 
-             <div>
-                <h4 className="font-semibold text-slate-600 dark:text-slate-400 mb-2 text-sm">Todas as Escalas da Semana</h4>
-                {weeklyTasks.length > 0 ? (
-                    <ul className="space-y-2 text-sm">
-                        {weeklyTasks.map((task, index) => (
-                            <li key={index} className="flex justify-between p-2 bg-slate-50 dark:bg-slate-700/50 rounded-md">
-                                <span className="font-medium text-slate-800 dark:text-slate-200">{task.dayName}</span>
-                                <span className="text-slate-600 dark:text-slate-300">{task.role}</span>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 italic p-2 bg-slate-50 dark:bg-slate-700/50 rounded-md">
-                        Nenhuma tarefa atribuída esta semana.
-                    </p>
-                )}
-             </div>
+             {isCurrentUser && (
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h4 className="font-black text-xs uppercase tracking-widest text-red-500 mb-3 ml-1">Zona de Perigo</h4>
+                    <button 
+                        onClick={() => setIsDeleteConfirmOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-2xl border border-red-100 dark:border-red-900/50 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all font-bold text-sm"
+                    >
+                        <TrashIcon className="w-5 h-5" />
+                        Excluir Minha Conta
+                    </button>
+                </div>
+             )}
         </div>
         
-        <div className="bg-slate-50 dark:bg-slate-900 px-6 py-4 rounded-b-2xl mt-auto border-t border-slate-200 dark:border-slate-700">
+        <div className="bg-slate-50 dark:bg-slate-900 p-6 border-t border-slate-200 dark:border-slate-700">
             <button 
                 onClick={onClose} 
-                type="button" 
-                className="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-700 text-base font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm"
+                className="w-full py-4 text-sm font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
             >
                 Fechar
             </button>
         </div>
       </div>
     </div>
+
+    <ConfirmationModal 
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Excluir Conta Permanentemente?"
+        message={
+            <div className="space-y-2">
+                <p>Esta ação não pode ser desfeita. Ao excluir sua conta:</p>
+                <ul className="list-disc list-inside text-xs space-y-1">
+                    <li>Seu acesso ao sistema será revogado imediatamente.</li>
+                    <li>Suas informações de perfil serão apagadas.</li>
+                    <li>Você será removido das escalas futuras.</li>
+                </ul>
+            </div>
+        }
+        confirmButtonText="Sim, Excluir Conta"
+    />
+    </>
   );
 };
 
