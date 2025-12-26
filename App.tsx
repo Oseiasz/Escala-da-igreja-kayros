@@ -271,6 +271,7 @@ const App: React.FC = () => {
             announcements={activeAnnouncements}
             onUpdateAnnouncements={(a) => setScheduleGroups(prev => prev.map(g => g.id === activeScheduleGroupId ? {...g, announcements: a} : g))}
             allMembers={allMembers}
+            users={users}
             onDeleteMember={(id) => setAllMembers(prev => prev.filter(m => m.id !== id))}
             onAddMember={(n, e, p) => setAllMembers(prev => [...prev, {id: `m_${Date.now()}`, name: n, email: e, phone: p, role: 'member'}])}
             currentUser={currentUser}
