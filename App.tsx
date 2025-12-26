@@ -7,10 +7,8 @@ import Header from './components/Header';
 import Notification from './components/Notification';
 import LoginView from './components/LoginView';
 import SignUpView from './components/SignUpView';
-import ForgotPasswordView from './components/ForgotPasswordView';
-import ResetPasswordView from './components/ResetPasswordView';
-import QuickSearchModal from './components/QuickSearchModal';
 import ProfileModal from './components/ProfileModal';
+import QuickSearchModal from './components/QuickSearchModal';
 import ScheduleDetailModal from './components/ScheduleDetailModal';
 
 // Chaves para o Banco de Dados Local
@@ -24,7 +22,6 @@ const DB_KEYS = {
 };
 
 const INITIAL_MEMBERS: Member[] = [
-  { id: 'm1', name: 'João Alves', phone: '(11) 98765-4321', email: 'joao.alves@example.com', role: 'member' },
   { id: 'admin', name: 'Administrador Principal', email: 'ozeiasof@gmail.com', role: 'admin' },
 ];
 
@@ -55,7 +52,9 @@ const App: React.FC = () => {
 
   const [allMembers, setAllMembers] = useState<Member[]>(() => {
     const saved = localStorage.getItem(DB_KEYS.MEMBERS);
-    return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+    let members = saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+    // Recuperação de Admin: Garante que o usuário ozeiasof@gmail.com seja SEMPRE admin
+    return members.map((m: Member) => m.email === 'ozeiasof@gmail.com' ? { ...m, role: 'admin' as const } : m);
   });
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -65,22 +64,18 @@ const App: React.FC = () => {
 
   const [scheduleGroups, setScheduleGroups] = useState<ScheduleGroup[]>(() => {
       const saved = localStorage.getItem(DB_KEYS.GROUPS);
-      return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Escala Sede', schedule: BLANK_SCHEDULE, announcements: '' }];
+      return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Congregação Sede', schedule: BLANK_SCHEDULE, announcements: '' }];
   });
 
   const [activeScheduleGroupId, setActiveScheduleGroupId] = useState<string>(() => {
       return localStorage.getItem(DB_KEYS.ACTIVE_GROUP) || 'default';
   });
 
-  // Usuário atual agora é derivado para refletir mudanças de cargo/avatar instantaneamente
   const currentUser = useMemo(() => allMembers.find(m => m.id === activeUserId) || null, [allMembers, activeUserId]);
 
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgotPassword'>('login');
-  const [notification, setNotification] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<Member | null>(null);
-  
-  // Detalhes da escala para o modal
   const [detailModal, setDetailModal] = useState<{ isOpen: boolean; date?: Date; schedule?: ScheduleDay }>({ isOpen: false });
 
   useEffect(() => localStorage.setItem(DB_KEYS.MEMBERS, JSON.stringify(allMembers)), [allMembers]);
@@ -98,39 +93,29 @@ const App: React.FC = () => {
   const handleLogin = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (user) {
-        const member = allMembers.find(m => m.id === user.memberId);
-        if (member) {
-            setActiveUserId(member.id);
-            localStorage.setItem(DB_KEYS.SESSION, member.id);
-            return { success: true };
-        }
+        setActiveUserId(user.memberId);
+        localStorage.setItem(DB_KEYS.SESSION, user.memberId);
+        return { success: true };
     }
     return { success: false, message: 'Dados inválidos.' };
-  }, [users, allMembers]);
+  }, [users]);
 
   const handleSignUp = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     const normalizedEmail = email.toLowerCase();
     if (users.some(u => u.email === normalizedEmail)) return { success: false, message: 'E-mail já cadastrado.' };
-    const existingMember = allMembers.find(m => m.email.toLowerCase() === normalizedEmail);
-    const memberId = existingMember ? existingMember.id : `m_${Date.now()}`;
-    if (!existingMember) setAllMembers(prev => [...prev, { id: memberId, name, email: normalizedEmail, role: 'member' }]);
+    const memberId = `m_${Date.now()}`;
+    setAllMembers(prev => [...prev, { id: memberId, name, email: normalizedEmail, role: normalizedEmail === 'ozeiasof@gmail.com' ? 'admin' : 'member' }]);
     setUsers(prev => [...prev, { email: normalizedEmail, password, memberId }]);
     setActiveUserId(memberId);
     localStorage.setItem(DB_KEYS.SESSION, memberId);
     return { success: true };
-  }, [users, allMembers]);
+  }, [users]);
 
   const handleLogout = () => {
       setActiveUserId(null);
       localStorage.removeItem(DB_KEYS.SESSION);
       window.location.hash = '#/';
   };
-
-  const handleDeleteMember = useCallback((id: string) => {
-    setAllMembers(prev => prev.filter(m => m.id !== id));
-    setUsers(prev => prev.filter(u => u.memberId !== id));
-    if (activeUserId === id) handleLogout();
-  }, [activeUserId]);
 
   const activeScheduleGroup = useMemo(() => scheduleGroups.find(g => g.id === activeScheduleGroupId) || scheduleGroups[0], [scheduleGroups, activeScheduleGroupId]);
 
@@ -142,7 +127,7 @@ const App: React.FC = () => {
   const isAdmin = currentUser.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-500">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
       <Header 
         isAdmin={isAdmin} 
         view={isAdmin && route === '#/admin' ? 'admin' : 'user'} 
@@ -166,7 +151,10 @@ const App: React.FC = () => {
             onUpdateAnnouncements={(a) => setScheduleGroups(prev => prev.map(g => g.id === activeScheduleGroupId ? {...g, announcements: a} : g))}
             allMembers={allMembers}
             users={users}
-            onDeleteMember={handleDeleteMember}
+            onDeleteMember={(id) => {
+                setAllMembers(prev => prev.filter(m => m.id !== id));
+                setUsers(prev => prev.filter(u => u.memberId !== id));
+            }}
             onAddMember={(n, e, p, r) => setAllMembers(prev => [...prev, {id: `m_${Date.now()}`, name: n, email: e, phone: p, role: r}])}
             currentUser={currentUser}
             onToggleAdmin={(id) => setAllMembers(prev => prev.map(m => m.id === id ? {...m, role: m.role === 'admin' ? 'member' : 'admin'} : m))}
@@ -178,7 +166,12 @@ const App: React.FC = () => {
                 setScheduleGroups(prev => [...prev, newG]);
                 setActiveScheduleGroupId(newG.id);
             }}
-            onDeleteScheduleGroup={(id) => setScheduleGroups(prev => prev.filter(g => g.id !== id))}
+            onDeleteScheduleGroup={(id) => {
+                if (scheduleGroups.length > 1) {
+                    setScheduleGroups(prev => prev.filter(g => g.id !== id));
+                    setActiveScheduleGroupId(scheduleGroups[0].id);
+                }
+            }}
             onUpdateScheduleGroupName={(id, n) => setScheduleGroups(prev => prev.map(g => g.id === id ? {...g, name: n} : g))}
           />
         ) : (
@@ -192,8 +185,6 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {notification && <Notification message={notification} onClose={() => setNotification(null)} />}
-      
       <QuickSearchModal 
         isOpen={isSearchOpen} 
         onClose={() => setIsSearchOpen(false)} 
@@ -209,7 +200,11 @@ const App: React.FC = () => {
         onClose={() => setViewingProfile(null)} 
         currentUser={currentUser} 
         onUpdateAvatar={(id, url) => setAllMembers(prev => prev.map(m => m.id === id ? {...m, avatar: url} : m))}
-        onDeleteAccount={handleDeleteMember}
+        onDeleteAccount={(id) => {
+            setAllMembers(prev => prev.filter(m => m.id !== id));
+            setUsers(prev => prev.filter(u => u.memberId !== id));
+            if (activeUserId === id) handleLogout();
+        }}
       />
 
       <ScheduleDetailModal 
