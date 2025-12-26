@@ -68,20 +68,20 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <button onClick={handlePrevMonth} className="p-3 rounded-full hover:bg-slate-100 dark:hover:bg-emerald-950/30 transition-all" aria-label="Mês anterior">
-                    <ChevronLeftIcon className="w-6 h-6 text-slate-500 dark:text-emerald-500" />
+            <div className="flex justify-between items-center mb-8">
+                <button onClick={handlePrevMonth} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-emerald-500/10 transition-all border border-transparent dark:border-emerald-500/20" aria-label="Mês anterior">
+                    <ChevronLeftIcon className="w-7 h-7 text-slate-500 dark:text-emerald-500" />
                 </button>
-                <h2 className="text-2xl font-black text-slate-700 dark:text-emerald-400 capitalize tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-700 dark:text-white capitalize tracking-tight">
                     {viewDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                 </h2>
-                <button onClick={handleNextMonth} className="p-3 rounded-full hover:bg-slate-100 dark:hover:bg-emerald-950/30 transition-all" aria-label="Próximo mês">
-                    <ChevronRightIcon className="w-6 h-6 text-slate-500 dark:text-emerald-500" />
+                <button onClick={handleNextMonth} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-emerald-500/10 transition-all border border-transparent dark:border-emerald-500/20" aria-label="Próximo mês">
+                    <ChevronRightIcon className="w-7 h-7 text-slate-500 dark:text-emerald-500" />
                 </button>
             </div>
-            <div className="grid grid-cols-7 gap-px bg-slate-200 dark:bg-emerald-900/20 border border-slate-200 dark:border-emerald-900/30 rounded-3xl overflow-hidden shadow-sm">
+            <div className="grid grid-cols-7 gap-px bg-slate-200 dark:bg-emerald-500/20 border border-slate-200 dark:border-emerald-500/30 rounded-[2rem] overflow-hidden shadow-2xl">
                 {WEEKDAY_NAMES.map(day => (
-                    <div key={day} className="text-center text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 py-3 bg-slate-50 dark:bg-slate-950 tracking-widest">
+                    <div key={day} className="text-center text-[11px] font-black uppercase text-slate-500 dark:text-emerald-500/80 py-4 bg-slate-50 dark:bg-black tracking-widest">
                         {day}
                     </div>
                 ))}
@@ -90,46 +90,46 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
                     const isToday = areDatesSameDay(date, today);
                     const hasActiveEvent = daySchedule?.active === true;
                     
-                    const cellClasses = `p-2 min-h-[110px] transition-all duration-300 relative
-                        ${isCurrentMonth ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-950/50 text-slate-400 dark:text-emerald-950'}
-                        ${hasActiveEvent && isCurrentMonth ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-emerald-950/20' : ''}
+                    const cellClasses = `p-2 min-h-[120px] transition-all duration-300 relative
+                        ${isCurrentMonth ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50 dark:bg-black/40 text-slate-400 dark:text-zinc-800'}
+                        ${hasActiveEvent && isCurrentMonth ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-emerald-500/5' : ''}
                     `;
-                    const dateClasses = `flex items-center justify-center w-8 h-8 rounded-xl text-sm transition-all
-                        ${isToday ? 'bg-indigo-600 dark:bg-emerald-600 text-white font-black shadow-lg shadow-indigo-200 dark:shadow-emerald-900/40 scale-110' : ''}
-                        ${!isToday && hasActiveEvent ? 'font-black text-indigo-700 dark:text-emerald-400' : 'font-bold'}
-                        ${!isCurrentMonth ? 'opacity-40' : ''}
+                    const dateClasses = `flex items-center justify-center w-9 h-9 rounded-2xl text-base transition-all
+                        ${isToday ? 'bg-indigo-600 dark:bg-emerald-600 text-white font-black shadow-lg shadow-indigo-200 dark:shadow-emerald-500/30 scale-110' : ''}
+                        ${!isToday && hasActiveEvent ? 'font-black text-indigo-700 dark:text-emerald-400 text-lg' : 'font-bold dark:text-zinc-400'}
+                        ${!isCurrentMonth ? 'opacity-30' : ''}
                     `;
 
                     return (
                         <div key={index} className={cellClasses} onClick={() => onDateClick(date, daySchedule)}>
-                            <div className="flex justify-center mb-1">
+                            <div className="flex justify-center mb-2">
                                 <span className={dateClasses}>{date.getDate()}</span>
                             </div>
                             {isCurrentMonth && hasActiveEvent && (
                                 <div className="text-center">
-                                     <p className="text-[10px] font-black text-indigo-800 dark:text-emerald-500 uppercase leading-tight truncate px-1">{daySchedule?.event}</p>
-                                     <div className="flex justify-center mt-2 gap-1 flex-wrap">
-                                         {daySchedule?.worshipLeaders && daySchedule.worshipLeaders.length > 0 && <div className="w-1.5 h-1.5 bg-purple-400 dark:bg-emerald-400 rounded-full" />}
-                                         {daySchedule?.preachers && daySchedule.preachers.length > 0 && <div className="w-1.5 h-1.5 bg-orange-400 dark:bg-emerald-400 rounded-full" />}
-                                         {daySchedule?.doorkeepers.length > 0 && <div className="w-1.5 h-1.5 bg-blue-400 dark:bg-emerald-400 rounded-full" />}
-                                         {daySchedule?.hymnSingers.length > 0 && <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)]" />}
+                                     <p className="text-[10px] font-black text-indigo-800 dark:text-emerald-500 uppercase leading-tight truncate px-1 tracking-tighter shadow-black">{daySchedule?.event}</p>
+                                     <div className="flex justify-center mt-3 gap-1.5 flex-wrap">
+                                         {daySchedule?.worshipLeaders && daySchedule.worshipLeaders.length > 0 && <div className="w-2 h-2 bg-purple-500 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" />}
+                                         {daySchedule?.preachers && daySchedule.preachers.length > 0 && <div className="w-2 h-2 bg-orange-500 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" />}
+                                         {daySchedule?.doorkeepers.length > 0 && <div className="w-2 h-2 bg-blue-500 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" />}
+                                         {daySchedule?.hymnSingers.length > 0 && <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full shadow-[0_0_10px_emerald]" />}
                                      </div>
                                 </div>
                             )}
                             {isAdmin && isCurrentMonth && hasActiveEvent && (
-                                <button className="absolute bottom-2 right-2 p-1 text-slate-300 dark:text-emerald-900 hover:text-indigo-600 dark:hover:text-emerald-400 transition-colors" onClick={(e) => { e.stopPropagation(); onDateClick(date, daySchedule);}}>
-                                    <EditIcon className="w-4 h-4" />
+                                <button className="absolute bottom-3 right-3 p-1.5 text-slate-300 dark:text-zinc-700 hover:text-indigo-600 dark:hover:text-emerald-400 transition-colors" onClick={(e) => { e.stopPropagation(); onDateClick(date, daySchedule);}}>
+                                    <EditIcon className="w-5 h-5" />
                                 </button>
                             )}
                         </div>
                     );
                 })}
             </div>
-            <div className="mt-6 flex flex-wrap justify-center gap-6">
-                <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-purple-400 dark:bg-emerald-400 rounded-full" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 tracking-widest">Dirigente</span></div>
-                <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-orange-400 dark:bg-emerald-400 rounded-full" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 tracking-widest">Pregador</span></div>
-                <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-blue-400 dark:bg-emerald-400 rounded-full" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 tracking-widest">Portaria</span></div>
-                <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-emerald-400 dark:bg-emerald-400 rounded-full" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 tracking-widest">Louvor</span></div>
+            <div className="mt-8 flex flex-wrap justify-center gap-6">
+                <div className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-emerald-500/20 shadow-sm"><div className="w-3 h-3 bg-purple-400 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-500 tracking-widest">Dirigente</span></div>
+                <div className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-emerald-500/20 shadow-sm"><div className="w-3 h-3 bg-orange-400 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-500 tracking-widest">Pregador</span></div>
+                <div className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-emerald-500/20 shadow-sm"><div className="w-3 h-3 bg-blue-400 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-500 tracking-widest">Portaria</span></div>
+                <div className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-emerald-500/20 shadow-sm"><div className="w-3 h-3 bg-emerald-400 dark:bg-emerald-400 rounded-full shadow-[0_0_8px_emerald]" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-500 tracking-widest">Louvor</span></div>
             </div>
         </div>
     );

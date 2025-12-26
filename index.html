@@ -6,11 +6,22 @@
     <meta name="google" content="notranslate" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Escala de Trabalho da Igreja</title>
+    <title>Escala Igreja - Black & Green</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'church-black': '#000000',
+              'church-dark': '#0a0a0a',
+              'church-green': '#10b981',
+              'church-vibrant': '#22c55e',
+              'church-neon': '#4ade80'
+            }
+          }
+        }
       }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -29,19 +40,30 @@
 }
 </script>
     <style>
-      @keyframes slide-in {
-        from { transform: translateY(100%); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-      }
-      .animate-slide-in { animation: slide-in 0.5s ease-out forwards; }
-      /* Custom Scrollbar */
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+      
+      body { font-family: 'Inter', sans-serif; }
+      
+      .dark body { background-color: #000000; color: #ffffff; }
+      
+      /* Scrollbar Verde */
       .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-      .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: #000000; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+      
+      /* Efeito de brilho em elementos verdes no tema escuro */
+      .dark .neon-text {
+        color: #10b981;
+        text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+      }
+      
+      .dark .neon-border {
+        border-color: rgba(16, 185, 129, 0.4);
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+      }
     </style>
   </head>
-  <body class="bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+  <body class="bg-slate-50 dark:bg-church-black transition-colors duration-300">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

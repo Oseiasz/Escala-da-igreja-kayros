@@ -26,10 +26,10 @@ const ParticipantChip: React.FC<{ participant: ScheduleParticipant, onMemberClic
     return (
         <div 
             onClick={() => participant.memberData && onMemberClick(participant.memberData)}
-            className={`inline-flex items-center gap-1.5 p-1 pr-2.5 rounded-full border shadow-sm transition-all ${participant.memberData ? 'bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-emerald-950/20 border-slate-200 dark:border-emerald-900/40 cursor-pointer' : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-emerald-950 opacity-70 cursor-default'}`}
+            className={`inline-flex items-center gap-2 p-1 pr-3.5 rounded-full border shadow-sm transition-all ${participant.memberData ? 'bg-white hover:bg-slate-50 dark:bg-black dark:hover:bg-emerald-500/10 border-slate-200 dark:border-emerald-500/40 cursor-pointer' : 'bg-slate-100 dark:bg-zinc-950 border-slate-200 dark:border-zinc-900 opacity-70 cursor-default'}`}
         >
-            <Avatar member={participant.memberData || null} className="w-5 h-5 text-[0.6rem]" />
-            <span className="text-xs font-black text-slate-700 dark:text-emerald-400 max-w-[100px] truncate uppercase tracking-tighter">
+            <Avatar member={participant.memberData || null} className="w-7 h-7 text-[0.7rem]" />
+            <span className="text-sm font-black text-slate-700 dark:text-emerald-400 max-w-[120px] truncate uppercase tracking-tighter">
                 {participant.name.split(' ')[0]}
             </span>
         </div>
@@ -79,43 +79,46 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUse
             </div>
         </div>
 
-        <div className="space-y-6 sm:space-y-8">
-            <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-3xl shadow-lg border border-transparent dark:border-emerald-900/20">
-                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-700 dark:text-emerald-400 sm:text-left text-center">Escala Mensal</h2>
+        <div className="space-y-8 pb-16">
+            <div className="bg-white dark:bg-zinc-900 p-6 sm:p-10 rounded-[2.5rem] shadow-2xl border border-transparent dark:border-emerald-500/20">
+                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 mb-10">
+                    <div className="space-y-1 text-center sm:text-left">
+                        <h2 className="text-2xl sm:text-4xl font-black text-slate-800 dark:text-white tracking-tight">Escala de Trabalho</h2>
+                        <p className="text-slate-500 dark:text-emerald-500 font-bold uppercase tracking-widest text-xs">Visualização Mensal de Atividades</p>
+                    </div>
                     
                     <div className="flex items-center gap-3 self-center sm:self-auto">
-                        <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl">
+                        <div className="flex bg-slate-100 dark:bg-black p-1.5 rounded-[1.2rem] shadow-inner">
                             <button
                                 onClick={() => setViewMode('calendar')}
-                                className={`p-2.5 rounded-xl transition-all ${viewMode === 'calendar' ? 'bg-white dark:bg-emerald-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-500 dark:text-emerald-900 hover:text-slate-700 dark:hover:text-emerald-500'}`}
+                                className={`p-3 rounded-xl transition-all ${viewMode === 'calendar' ? 'bg-white dark:bg-emerald-600 shadow-md text-indigo-600 dark:text-white' : 'text-slate-500 dark:text-zinc-700 hover:text-slate-700 dark:hover:text-emerald-500'}`}
                                 title="Calendário"
                             >
-                                <CalendarIcon className="w-5 h-5" />
+                                <CalendarIcon className="w-6 h-6" />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-emerald-600 shadow-sm text-indigo-600 dark:text-white' : 'text-slate-500 dark:text-emerald-900 hover:text-slate-700 dark:hover:text-emerald-500'}`}
+                                className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-emerald-600 shadow-md text-indigo-600 dark:text-white' : 'text-slate-500 dark:text-zinc-700 hover:text-slate-700 dark:hover:text-emerald-500'}`}
                                 title="Lista"
                             >
-                                <ListBulletIcon className="w-5 h-5" />
+                                <ListBulletIcon className="w-6 h-6" />
                             </button>
                         </div>
                         
                         <button
                             onClick={() => setIsQrOpen(true)}
-                            className="p-2.5 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-emerald-500 rounded-xl hover:bg-slate-200 dark:hover:bg-emerald-900/30 transition-all"
+                            className="p-3 bg-slate-100 dark:bg-black text-slate-600 dark:text-emerald-500 rounded-xl hover:bg-slate-200 dark:hover:bg-zinc-800 transition-all border border-transparent dark:border-emerald-500/20 shadow-md"
                             title="QR Code"
                         >
-                            <QrCodeIcon className="w-5 h-5" />
+                            <QrCodeIcon className="w-6 h-6" />
                         </button>
 
                         <button
                             onClick={() => setIsPdfConfirmOpen(true)}
                             disabled={isSavingPdf}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white text-sm font-black rounded-xl shadow-lg shadow-green-200 dark:shadow-emerald-900/20 hover:bg-green-700 transition-all disabled:opacity-50"
+                            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white text-sm font-black rounded-xl shadow-xl shadow-green-200 dark:shadow-emerald-900/20 hover:bg-green-700 transition-all disabled:opacity-50"
                         >
-                            <PdfIcon className="w-5 h-5"/>
+                            <PdfIcon className="w-6 h-6"/>
                             <span className="hidden sm:inline">PDF</span>
                         </button>
                     </div>
@@ -130,21 +133,21 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUse
                         onMemberClick={onMemberClick}
                      />
                  ) : (
-                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         {schedule.filter(d => d.active).map(day => (
-                            <div key={day.id} className="bg-slate-50 dark:bg-slate-950 rounded-[2rem] p-6 border border-slate-200 dark:border-emerald-900/20 flex flex-col gap-4">
-                                <div className="border-b dark:border-emerald-900/20 pb-3">
-                                    <h3 className="font-black text-xl text-slate-800 dark:text-emerald-400">{day.dayName}</h3>
-                                    <p className="text-sm text-indigo-600 dark:text-emerald-600 font-black uppercase tracking-widest">{day.event}</p>
+                            <div key={day.id} className="bg-slate-50 dark:bg-black rounded-[2.5rem] p-8 border border-slate-200 dark:border-emerald-500/20 flex flex-col gap-6 hover:scale-[1.02] transition-transform duration-300 shadow-xl">
+                                <div className="border-b dark:border-emerald-500/20 pb-4">
+                                    <h3 className="font-black text-2xl text-slate-800 dark:text-emerald-400">{day.dayName}</h3>
+                                    <p className="text-sm text-indigo-600 dark:text-emerald-500 font-black uppercase tracking-[0.2em] mt-1">{day.event}</p>
                                 </div>
                                 
-                                <div className="space-y-4">
+                                <div className="space-y-6">
                                     {(day.worshipLeaders && day.worshipLeaders.length > 0) && (
                                         <div>
-                                            <div className="flex items-center gap-1.5 mb-2 text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 tracking-widest">
-                                                <MicrophoneIcon className="w-3.5 h-3.5" /> Dirigente
+                                            <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase text-slate-500 dark:text-emerald-900 tracking-widest">
+                                                <MicrophoneIcon className="w-4 h-4 text-emerald-600" /> Dirigente
                                             </div>
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-wrap gap-2.5">
                                                 {day.worshipLeaders.map(p => <ParticipantChip key={p.id} participant={p} onMemberClick={onMemberClick} />)}
                                             </div>
                                         </div>
@@ -152,36 +155,36 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUse
 
                                     {(day.preachers && day.preachers.length > 0) && (
                                         <div>
-                                            <div className="flex items-center gap-1.5 mb-2 text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 tracking-widest">
-                                                <BookOpenIcon className="w-3.5 h-3.5" /> Pregador(a)
+                                            <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase text-slate-500 dark:text-emerald-900 tracking-widest">
+                                                <BookOpenIcon className="w-4 h-4 text-emerald-600" /> Pregador(a)
                                             </div>
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-wrap gap-2.5">
                                                 {day.preachers.map(p => <ParticipantChip key={p.id} participant={p} onMemberClick={onMemberClick} />)}
                                             </div>
                                         </div>
                                     )}
 
                                     <div>
-                                        <div className="flex items-center gap-1.5 mb-2 text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 tracking-widest">
-                                            <KeyIcon className="w-3.5 h-3.5" /> Portaria
+                                        <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase text-slate-500 dark:text-emerald-900 tracking-widest">
+                                            <KeyIcon className="w-4 h-4 text-emerald-600" /> Portaria
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-2.5">
                                             {day.doorkeepers.length > 0 ? (
                                                 day.doorkeepers.map(p => <ParticipantChip key={p.id} participant={p} onMemberClick={onMemberClick} />)
                                             ) : (
-                                                <span className="text-xs text-slate-400 dark:text-emerald-950 italic font-medium">Livre</span>
+                                                <span className="text-xs text-slate-400 dark:text-zinc-800 italic font-medium px-4 py-2 bg-slate-100 dark:bg-zinc-950 rounded-full">Livre</span>
                                             )}
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="flex items-center gap-1.5 mb-2 text-[10px] font-black uppercase text-slate-500 dark:text-emerald-800 tracking-widest">
-                                            <MusicalNoteIcon className="w-3.5 h-3.5" /> Louvor
+                                        <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase text-slate-500 dark:text-emerald-900 tracking-widest">
+                                            <MusicalNoteIcon className="w-4 h-4 text-emerald-600" /> Louvor
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-2.5">
                                             {day.hymnSingers.length > 0 ? (
                                                 day.hymnSingers.map(p => <ParticipantChip key={p.id} participant={p} onMemberClick={onMemberClick} />)
                                             ) : (
-                                                <span className="text-xs text-slate-400 dark:text-emerald-950 italic font-medium">Livre</span>
+                                                <span className="text-xs text-slate-400 dark:text-zinc-800 italic font-medium px-4 py-2 bg-slate-100 dark:bg-zinc-950 rounded-full">Livre</span>
                                             )}
                                         </div>
                                     </div>
@@ -192,14 +195,14 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, currentUse
                  )}
             </div>
 
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-lg border border-transparent dark:border-emerald-900/20">
-                <h3 className="text-xl font-black mb-4 text-center text-slate-700 dark:text-emerald-400 uppercase tracking-widest">Notificações</h3>
+            <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] shadow-xl border border-transparent dark:border-emerald-500/20">
+                <h3 className="text-xl font-black mb-6 text-center text-slate-700 dark:text-emerald-500 uppercase tracking-[0.3em]">Notificações</h3>
                 <PushNotificationManager />
             </div>
         
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-lg border border-transparent dark:border-emerald-900/20">
-                <h3 className="text-xl font-black mb-6 text-slate-700 dark:text-emerald-400 uppercase tracking-widest">Quadro de Avisos</h3>
-                <div className="whitespace-pre-wrap p-6 bg-emerald-50 dark:bg-emerald-950/20 border-l-4 border-emerald-400 dark:border-emerald-600 text-emerald-800 dark:text-emerald-400 rounded-r-3xl font-bold text-sm leading-relaxed">
+            <div className="bg-white dark:bg-zinc-900 p-10 rounded-[2.5rem] shadow-xl border border-transparent dark:border-emerald-500/20">
+                <h3 className="text-xl font-black mb-6 text-slate-700 dark:text-emerald-500 uppercase tracking-[0.3em]">Quadro de Avisos</h3>
+                <div className="whitespace-pre-wrap p-8 bg-emerald-50 dark:bg-black border-l-8 border-emerald-500 text-emerald-950 dark:text-white rounded-r-[2.5rem] font-bold text-lg leading-relaxed shadow-inner">
                     <p>{announcements}</p>
                 </div>
             </div>

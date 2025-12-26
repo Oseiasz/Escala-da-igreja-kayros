@@ -13,12 +13,12 @@ import ScheduleDetailModal from './components/ScheduleDetailModal';
 
 // Chaves para o Banco de Dados Local
 const DB_KEYS = {
-  MEMBERS: 'church_db_members',
-  USERS: 'church_db_users',
-  GROUPS: 'church_db_groups',
-  ACTIVE_GROUP: 'church_db_active_group_id',
-  THEME: 'church_db_theme',
-  SESSION: 'church_db_active_user_id'
+  MEMBERS: 'church_db_members_v2',
+  USERS: 'church_db_users_v2',
+  GROUPS: 'church_db_groups_v2',
+  ACTIVE_GROUP: 'church_db_active_group_v2',
+  THEME: 'church_db_theme_v2',
+  SESSION: 'church_db_active_user_v2'
 };
 
 const INITIAL_MEMBERS: Member[] = [
@@ -44,42 +44,53 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem(DB_KEYS.THEME) === 'dark' ? 'dark' : 'light'));
   const [activeUserId, setActiveUserId] = useState<string | null>(localStorage.getItem(DB_KEYS.SESSION));
 
+  // Sincronização de Hash para Roteamento
   useEffect(() => {
     const handleHashChange = () => setRoute(window.location.hash || '#/');
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Carregamento Inicial de Membros
   const [allMembers, setAllMembers] = useState<Member[]>(() => {
     const saved = localStorage.getItem(DB_KEYS.MEMBERS);
     let members = saved ? JSON.parse(saved) : INITIAL_MEMBERS;
-    // Recuperação de Admin: Garante que o usuário ozeiasof@gmail.com seja SEMPRE admin
-    return members.map((m: Member) => m.email === 'ozeiasof@gmail.com' ? { ...m, role: 'admin' as const } : m);
+    // Garante que o administrador mestre esteja sempre na lista
+    if (!members.find((m: Member) => m.email === 'ozeiasof@gmail.com')) {
+        members = [...INITIAL_MEMBERS, ...members];
+    }
+    return members.map((m: Member) => m.email === 'ozeiasof@gmail.com' ? { ...m, role: 'admin' } : m);
   });
 
+  // Carregamento Inicial de Usuários (Login)
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem(DB_KEYS.USERS);
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    let u = saved ? JSON.parse(saved) : INITIAL_USERS;
+    if (!u.find((usr: User) => usr.email === 'ozeiasof@gmail.com')) {
+        u = [...INITIAL_USERS, ...u];
+    }
+    return u;
   });
 
+  // Carregamento Inicial de Grupos (Congregações)
   const [scheduleGroups, setScheduleGroups] = useState<ScheduleGroup[]>(() => {
       const saved = localStorage.getItem(DB_KEYS.GROUPS);
-      return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Congregação Sede', schedule: BLANK_SCHEDULE, announcements: '' }];
+      return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Congregação Sede', schedule: BLANK_SCHEDULE, announcements: 'Seja bem-vindo!' }];
   });
 
   const [activeScheduleGroupId, setActiveScheduleGroupId] = useState<string>(() => {
       return localStorage.getItem(DB_KEYS.ACTIVE_GROUP) || 'default';
   });
 
-  const currentUser = useMemo(() => allMembers.find(m => m.id === activeUserId) || null, [allMembers, activeUserId]);
+  // Persistência automática no localStorage quando houver mudanças
+  useEffect(() => {
+    localStorage.setItem(DB_KEYS.MEMBERS, JSON.stringify(allMembers));
+  }, [allMembers]);
 
-  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgotPassword'>('login');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [viewingProfile, setViewingProfile] = useState<Member | null>(null);
-  const [detailModal, setDetailModal] = useState<{ isOpen: boolean; date?: Date; schedule?: ScheduleDay }>({ isOpen: false });
+  useEffect(() => {
+    localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
+  }, [users]);
 
-  useEffect(() => localStorage.setItem(DB_KEYS.MEMBERS, JSON.stringify(allMembers)), [allMembers]);
-  useEffect(() => localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users)), [users]);
   useEffect(() => {
     localStorage.setItem(DB_KEYS.GROUPS, JSON.stringify(scheduleGroups));
     localStorage.setItem(DB_KEYS.ACTIVE_GROUP, activeScheduleGroupId);
@@ -90,6 +101,9 @@ const App: React.FC = () => {
     localStorage.setItem(DB_KEYS.THEME, theme);
   }, [theme]);
 
+  const currentUser = useMemo(() => allMembers.find(m => m.id === activeUserId) || null, [allMembers, activeUserId]);
+  const activeScheduleGroup = useMemo(() => scheduleGroups.find(g => g.id === activeScheduleGroupId) || scheduleGroups[0], [scheduleGroups, activeScheduleGroupId]);
+
   const handleLogin = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (user) {
@@ -97,15 +111,25 @@ const App: React.FC = () => {
         localStorage.setItem(DB_KEYS.SESSION, user.memberId);
         return { success: true };
     }
-    return { success: false, message: 'Dados inválidos.' };
+    return { success: false, message: 'Credenciais inválidas. Verifique e-mail e senha.' };
   }, [users]);
 
   const handleSignUp = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     const normalizedEmail = email.toLowerCase();
-    if (users.some(u => u.email === normalizedEmail)) return { success: false, message: 'E-mail já cadastrado.' };
+    if (users.some(u => u.email === normalizedEmail)) return { success: false, message: 'Este e-mail já está sendo usado.' };
+    
     const memberId = `m_${Date.now()}`;
-    setAllMembers(prev => [...prev, { id: memberId, name, email: normalizedEmail, role: normalizedEmail === 'ozeiasof@gmail.com' ? 'admin' : 'member' }]);
-    setUsers(prev => [...prev, { email: normalizedEmail, password, memberId }]);
+    const newMember: Member = { 
+        id: memberId, 
+        name, 
+        email: normalizedEmail, 
+        role: normalizedEmail === 'ozeiasof@gmail.com' ? 'admin' : 'member' 
+    };
+    const newUser: User = { email: normalizedEmail, password, memberId };
+
+    setAllMembers(prev => [...prev, newMember]);
+    setUsers(prev => [...prev, newUser]);
+    
     setActiveUserId(memberId);
     localStorage.setItem(DB_KEYS.SESSION, memberId);
     return { success: true };
@@ -117,7 +141,10 @@ const App: React.FC = () => {
       window.location.hash = '#/';
   };
 
-  const activeScheduleGroup = useMemo(() => scheduleGroups.find(g => g.id === activeScheduleGroupId) || scheduleGroups[0], [scheduleGroups, activeScheduleGroupId]);
+  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgotPassword'>('login');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [viewingProfile, setViewingProfile] = useState<Member | null>(null);
+  const [detailModal, setDetailModal] = useState<{ isOpen: boolean; date?: Date; schedule?: ScheduleDay }>({ isOpen: false });
 
   if (!currentUser) {
     if (authView === 'signup') return <SignUpView onSignUp={handleSignUp} onSwitchToLogin={() => setAuthView('login')} />;
@@ -127,7 +154,7 @@ const App: React.FC = () => {
   const isAdmin = currentUser.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+    <div className="min-h-screen bg-slate-50 dark:bg-church-black transition-colors duration-500">
       <Header 
         isAdmin={isAdmin} 
         view={isAdmin && route === '#/admin' ? 'admin' : 'user'} 
@@ -152,17 +179,21 @@ const App: React.FC = () => {
             allMembers={allMembers}
             users={users}
             onDeleteMember={(id) => {
+                if (id === 'admin') return; // Protege o admin principal
                 setAllMembers(prev => prev.filter(m => m.id !== id));
                 setUsers(prev => prev.filter(u => u.memberId !== id));
             }}
             onAddMember={(n, e, p, r) => setAllMembers(prev => [...prev, {id: `m_${Date.now()}`, name: n, email: e, phone: p, role: r}])}
             currentUser={currentUser}
-            onToggleAdmin={(id) => setAllMembers(prev => prev.map(m => m.id === id ? {...m, role: m.role === 'admin' ? 'member' : 'admin'} : m))}
+            onToggleAdmin={(id) => {
+                if (id === 'admin') return;
+                setAllMembers(prev => prev.map(m => m.id === id ? {...m, role: m.role === 'admin' ? 'member' : 'admin'} : m))
+            }}
             onUpdateMember={(m) => setAllMembers(prev => prev.map(old => old.id === m.id ? m : old))}
             scheduleGroups={scheduleGroups}
             activeScheduleGroupId={activeScheduleGroupId}
             onAddScheduleGroup={(name) => {
-                const newG = {id: `g_${Date.now()}`, name, schedule: BLANK_SCHEDULE, announcements: ""};
+                const newG = {id: `g_${Date.now()}`, name, schedule: BLANK_SCHEDULE, announcements: "Novo quadro de avisos."};
                 setScheduleGroups(prev => [...prev, newG]);
                 setActiveScheduleGroupId(newG.id);
             }}
@@ -176,10 +207,14 @@ const App: React.FC = () => {
           />
         ) : (
           <UserView 
-            schedule={activeScheduleGroup.schedule} announcements={activeScheduleGroup.announcements} 
-            currentUser={currentUser} onUpdateAvatar={(id, url) => setAllMembers(prev => prev.map(m => m.id === id ? {...m, avatar: url} : m))}
-            onMemberClick={setViewingProfile} scheduleName={activeScheduleGroup.name}
-            viewDate={new Date()} onNavigateDate={() => {}} 
+            schedule={activeScheduleGroup.schedule} 
+            announcements={activeScheduleGroup.announcements} 
+            currentUser={currentUser} 
+            onUpdateAvatar={(id, url) => setAllMembers(prev => prev.map(m => m.id === id ? {...m, avatar: url} : m))}
+            onMemberClick={setViewingProfile} 
+            scheduleName={activeScheduleGroup.name}
+            viewDate={new Date()} 
+            onNavigateDate={() => {}} 
             onDateClick={(date, day) => setDetailModal({ isOpen: true, date, schedule: day })}
           />
         )}
@@ -201,6 +236,7 @@ const App: React.FC = () => {
         currentUser={currentUser} 
         onUpdateAvatar={(id, url) => setAllMembers(prev => prev.map(m => m.id === id ? {...m, avatar: url} : m))}
         onDeleteAccount={(id) => {
+            if (id === 'admin') return;
             setAllMembers(prev => prev.filter(m => m.id !== id));
             setUsers(prev => prev.filter(u => u.memberId !== id));
             if (activeUserId === id) handleLogout();
