@@ -1,5 +1,7 @@
+
 import React, { useMemo } from 'react';
-import { BellIcon, AdminIcon, UserIcon, LogoutIcon, SearchIcon } from './icons';
+// Added CalendarIcon to the imports
+import { BellIcon, AdminIcon, UserIcon, LogoutIcon, SearchIcon, CalendarIcon } from './icons';
 import { Schedule, Member, ScheduleGroup } from '../types';
 import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
@@ -20,10 +22,10 @@ interface HeaderProps {
 
 const NotificationBell: React.FC<{ count: number }> = ({ count }) => {
     return (
-        <div className="relative">
-            <BellIcon className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+        <div className="relative group cursor-pointer p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <BellIcon className="w-6 h-6 text-slate-600 dark:text-slate-400 group-hover:text-indigo-500" />
             {count > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white ring-2 ring-white dark:ring-slate-800 animate-pulse">
                     {count}
                 </span>
             )}
@@ -37,24 +39,14 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
     const notificationCount = useMemo(() => {
         if (!currentUser) return 0;
-        
         const dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
         const tomorrowIndex = (new Date().getDay() + 1) % 7;
         const tomorrowDayName = dayNames[tomorrowIndex];
-
         const tomorrowSchedule = schedule.find(day => day.dayName === tomorrowDayName);
-        
-        if (!tomorrowSchedule || !tomorrowSchedule.active) {
-            return 0;
-        }
-
+        if (!tomorrowSchedule || !tomorrowSchedule.active) return 0;
         let tasksCount = 0;
-        if (tomorrowSchedule.doorkeepers.some(m => m.id === currentUser.id)) {
-            tasksCount++;
-        }
-        if (tomorrowSchedule.hymnSingers.some(m => m.id === currentUser.id)) {
-            tasksCount++;
-        }
+        if (tomorrowSchedule.doorkeepers.some(m => m.id === currentUser.id)) tasksCount++;
+        if (tomorrowSchedule.hymnSingers.some(m => m.id === currentUser.id)) tasksCount++;
         return tasksCount;
     }, [schedule, currentUser]);
 
@@ -63,74 +55,79 @@ const Header: React.FC<HeaderProps> = ({
     };
   
   return (
-    <header className="bg-white dark:bg-slate-800 shadow-md">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
-             <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 hidden sm:block">Escala</h1>
-             <select
-                value={activeScheduleGroupId}
-                onChange={(e) => onSetActiveScheduleGroupId(e.target.value)}
-                className="block w-full max-w-xs pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
-                aria-label="Selecionar escala"
-             >
-                {scheduleGroups.map(group => (
-                    <option key={group.id} value={group.id}>
-                        {group.name}
-                    </option>
-                ))}
-             </select>
+    <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-700/50">
+      <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
+        <div className="flex h-20 items-center justify-between">
+          <div className="flex items-center gap-8">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">
+                    <CalendarIcon className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-xl font-black text-slate-900 dark:text-white hidden sm:block tracking-tight">Escala<span className="text-indigo-600">Igreja</span></h1>
+             </div>
+             
+             <div className="hidden md:block h-8 w-px bg-slate-200 dark:bg-slate-700"></div>
+
+             <div className="relative group hidden sm:block">
+                <select
+                    value={activeScheduleGroupId}
+                    onChange={(e) => onSetActiveScheduleGroupId(e.target.value)}
+                    className="block w-full min-w-[160px] pl-3 pr-10 py-2.5 text-sm font-bold bg-slate-100 dark:bg-slate-700/50 border-none focus:ring-2 focus:ring-indigo-500 rounded-xl dark:text-slate-100 cursor-pointer transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
+                >
+                    {scheduleGroups.map(group => (
+                        <option key={group.id} value={group.id}>{group.name}</option>
+                    ))}
+                </select>
+             </div>
           </div>
-          <div className="flex items-center space-x-2 sm:space-x-4">
+
+          <div className="flex items-center gap-2 sm:gap-6">
             {currentUser && (
                 <>
-                    {view === 'user' && <NotificationBell count={notificationCount} />}
-                    
-                     <button
-                        onClick={onToggleSearch}
-                        type="button"
-                        className="flex items-center gap-2 p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800 transition-colors"
-                        aria-label="Abrir busca (Ctrl+K)"
-                    >
-                        <SearchIcon className="w-5 h-5" />
-                        <kbd className="hidden lg:inline-block px-2 py-1 text-xs font-sans font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md">
-                            Ctrl+K
-                        </kbd>
-                    </button>
-
-                    <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-
-                    <div className="flex items-center gap-2">
-                         <span className="text-sm font-medium text-slate-600 dark:text-slate-300 hidden sm:block">
-                            Olá, {currentUser.name.split(' ')[0]}
-                        </span>
-                        <Avatar member={currentUser} className="w-8 h-8"/>
+                    <div className="flex items-center gap-1 sm:gap-3 mr-2">
+                        <button
+                            onClick={onToggleSearch}
+                            className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                            title="Buscar (Ctrl+K)"
+                        >
+                            <SearchIcon className="w-6 h-6" />
+                        </button>
+                        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+                        {view === 'user' && <NotificationBell count={notificationCount} />}
                     </div>
 
-
-                    {isAdmin && (
-                        <div className="flex items-center p-1 bg-slate-200 dark:bg-slate-700 rounded-full">
-                            <button
-                                type="button"
-                                onClick={() => handleNavigation('#/')}
-                                className={`block p-1.5 rounded-full transition-colors duration-300 ${view === 'user' ? 'bg-white dark:bg-slate-500 shadow' : 'bg-transparent text-slate-500 dark:text-slate-400'}`}
-                                aria-label="Visualização de Usuário"
-                            >
-                                <UserIcon className="w-5 h-5" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleNavigation('#/admin')}
-                                className={`block p-1.5 rounded-full transition-colors duration-300 ${view === 'admin' ? 'bg-white dark:bg-slate-500 shadow' : 'bg-transparent text-slate-500 dark:text-slate-400'}`}
-                                aria-label="Visualização de Administrador"
-                            >
-                                <AdminIcon className="w-5 h-5" />
-                            </button>
+                    <div className="flex items-center gap-4 pl-4 border-l border-slate-200 dark:border-slate-700">
+                        {isAdmin && (
+                            <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl">
+                                <button
+                                    onClick={() => handleNavigation('#/')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all ${view === 'user' ? 'bg-white dark:bg-slate-800 shadow-md text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    <UserIcon className="w-4 h-4" />
+                                    <span className="hidden lg:inline">Geral</span>
+                                </button>
+                                <button
+                                    onClick={() => handleNavigation('#/admin')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all ${view === 'admin' ? 'bg-white dark:bg-slate-800 shadow-md text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    <AdminIcon className="w-4 h-4" />
+                                    <span className="hidden lg:inline">Gestão</span>
+                                </button>
+                            </div>
+                        )}
+                        
+                        <div className="flex items-center gap-3">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-xs font-black text-slate-900 dark:text-white leading-none mb-0.5">{currentUser.name.split(' ')[0]}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{currentUser.role === 'admin' ? 'Adm' : 'Membro'}</p>
+                            </div>
+                            <Avatar member={currentUser} className="w-10 h-10 border-2 border-white dark:border-slate-800 shadow-sm" />
                         </div>
-                    )}
-                    <button onClick={onLogout} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" aria-label="Sair">
-                      <LogoutIcon className="w-5 h-5" />
-                    </button>
+
+                        <button onClick={onLogout} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all" title="Sair">
+                            <LogoutIcon className="w-6 h-6" />
+                        </button>
+                    </div>
                 </>
             )}
           </div>

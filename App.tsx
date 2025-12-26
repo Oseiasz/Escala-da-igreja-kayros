@@ -12,7 +12,6 @@ import ResetPasswordView from './components/ResetPasswordView';
 import QuickSearchModal from './components/QuickSearchModal';
 import ProfileModal from './components/ProfileModal';
 import ScheduleDetailModal from './components/ScheduleDetailModal';
-import { sendWelcomeEmail } from './services/emailService';
 
 // Chaves para o Banco de Dados Local
 const DB_KEYS = {
@@ -46,14 +45,19 @@ const BLANK_SCHEDULE: Schedule = [
 const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash || '#/');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem(DB_KEYS.THEME) === 'dark' ? 'dark' : 'light'));
+  const [activeUserId, setActiveUserId] = useState<string | null>(localStorage.getItem(DB_KEYS.SESSION));
 
-  // Estado dos Membros (Pessoas cadastradas pelo ADM ou via SignUP)
+  useEffect(() => {
+    const handleHashChange = () => setRoute(window.location.hash || '#/');
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const [allMembers, setAllMembers] = useState<Member[]>(() => {
     const saved = localStorage.getItem(DB_KEYS.MEMBERS);
     return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
   });
 
-  // Estado dos Usuários (Pessoas que já criaram login/senha)
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem(DB_KEYS.USERS);
     return saved ? JSON.parse(saved) : INITIAL_USERS;
@@ -68,31 +72,19 @@ const App: React.FC = () => {
       return localStorage.getItem(DB_KEYS.ACTIVE_GROUP) || 'default';
   });
 
-  const [currentUser, setCurrentUser] = useState<Member | null>(() => {
-    const activeUserId = localStorage.getItem(DB_KEYS.SESSION);
-    if (activeUserId) {
-        // Tentamos carregar do banco de dados local atualizado
-        const savedMembers = localStorage.getItem(DB_KEYS.MEMBERS);
-        const membersList = savedMembers ? JSON.parse(savedMembers) : INITIAL_MEMBERS;
-        return membersList.find((m: Member) => m.id === activeUserId) || null;
-    }
-    return null;
-  });
+  // Usuário atual agora é derivado para refletir mudanças de cargo/avatar instantaneamente
+  const currentUser = useMemo(() => allMembers.find(m => m.id === activeUserId) || null, [allMembers, activeUserId]);
 
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgotPassword'>('login');
   const [notification, setNotification] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<Member | null>(null);
+  
+  // Detalhes da escala para o modal
+  const [detailModal, setDetailModal] = useState<{ isOpen: boolean; date?: Date; schedule?: ScheduleDay }>({ isOpen: false });
 
-  // Persistência Automática
-  useEffect(() => {
-    localStorage.setItem(DB_KEYS.MEMBERS, JSON.stringify(allMembers));
-  }, [allMembers]);
-
-  useEffect(() => {
-    localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
-  }, [users]);
-
+  useEffect(() => localStorage.setItem(DB_KEYS.MEMBERS, JSON.stringify(allMembers)), [allMembers]);
+  useEffect(() => localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users)), [users]);
   useEffect(() => {
     localStorage.setItem(DB_KEYS.GROUPS, JSON.stringify(scheduleGroups));
     localStorage.setItem(DB_KEYS.ACTIVE_GROUP, activeScheduleGroupId);
@@ -108,7 +100,7 @@ const App: React.FC = () => {
     if (user) {
         const member = allMembers.find(m => m.id === user.memberId);
         if (member) {
-            setCurrentUser(member);
+            setActiveUserId(member.id);
             localStorage.setItem(DB_KEYS.SESSION, member.id);
             return { success: true };
         }
@@ -119,26 +111,17 @@ const App: React.FC = () => {
   const handleSignUp = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     const normalizedEmail = email.toLowerCase();
     if (users.some(u => u.email === normalizedEmail)) return { success: false, message: 'E-mail já cadastrado.' };
-
     const existingMember = allMembers.find(m => m.email.toLowerCase() === normalizedEmail);
     const memberId = existingMember ? existingMember.id : `m_${Date.now()}`;
-    
-    if (!existingMember) {
-        setAllMembers(prev => [...prev, { id: memberId, name, email: normalizedEmail, role: 'member' }]);
-    }
-
-    const newUser = { email: normalizedEmail, password, memberId };
-    setUsers(prev => [...prev, newUser]);
-    
-    const finalMember = existingMember || { id: memberId, name, email: normalizedEmail, role: 'member' };
-    setCurrentUser(finalMember);
+    if (!existingMember) setAllMembers(prev => [...prev, { id: memberId, name, email: normalizedEmail, role: 'member' }]);
+    setUsers(prev => [...prev, { email: normalizedEmail, password, memberId }]);
+    setActiveUserId(memberId);
     localStorage.setItem(DB_KEYS.SESSION, memberId);
-    
     return { success: true };
   }, [users, allMembers]);
 
   const handleLogout = () => {
-      setCurrentUser(null);
+      setActiveUserId(null);
       localStorage.removeItem(DB_KEYS.SESSION);
       window.location.hash = '#/';
   };
@@ -146,12 +129,8 @@ const App: React.FC = () => {
   const handleDeleteMember = useCallback((id: string) => {
     setAllMembers(prev => prev.filter(m => m.id !== id));
     setUsers(prev => prev.filter(u => u.memberId !== id));
-    
-    // Se o usuário estiver deletando a própria conta, desloga
-    if (currentUser?.id === id) {
-        handleLogout();
-    }
-  }, [currentUser]);
+    if (activeUserId === id) handleLogout();
+  }, [activeUserId]);
 
   const activeScheduleGroup = useMemo(() => scheduleGroups.find(g => g.id === activeScheduleGroupId) || scheduleGroups[0], [scheduleGroups, activeScheduleGroupId]);
 
@@ -163,17 +142,22 @@ const App: React.FC = () => {
   const isAdmin = currentUser.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-500">
       <Header 
-        isAdmin={isAdmin} view={isAdmin && route === '#/admin' ? 'admin' : 'user'} 
-        schedule={activeScheduleGroup.schedule} currentUser={currentUser} onLogout={handleLogout} 
-        theme={theme} onToggleTheme={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+        isAdmin={isAdmin} 
+        view={isAdmin && route === '#/admin' ? 'admin' : 'user'} 
+        schedule={activeScheduleGroup.schedule} 
+        currentUser={currentUser} 
+        onLogout={handleLogout} 
+        theme={theme} 
+        onToggleTheme={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
         onToggleSearch={() => setIsSearchOpen(true)}
-        scheduleGroups={scheduleGroups} activeScheduleGroupId={activeScheduleGroupId}
+        scheduleGroups={scheduleGroups} 
+        activeScheduleGroupId={activeScheduleGroupId}
         onSetActiveScheduleGroupId={setActiveScheduleGroupId}
       />
       
-      <main className="container mx-auto p-4 lg:p-8">
+      <main className="container mx-auto p-4 lg:p-8 max-w-7xl">
         {isAdmin && route === '#/admin' ? (
           <AdminView
             schedule={activeScheduleGroup.schedule}
@@ -202,13 +186,23 @@ const App: React.FC = () => {
             schedule={activeScheduleGroup.schedule} announcements={activeScheduleGroup.announcements} 
             currentUser={currentUser} onUpdateAvatar={(id, url) => setAllMembers(prev => prev.map(m => m.id === id ? {...m, avatar: url} : m))}
             onMemberClick={setViewingProfile} scheduleName={activeScheduleGroup.name}
-            viewDate={new Date()} onNavigateDate={() => {}} onDateClick={() => {}}
+            viewDate={new Date()} onNavigateDate={() => {}} 
+            onDateClick={(date, day) => setDetailModal({ isOpen: true, date, schedule: day })}
           />
         )}
       </main>
 
       {notification && <Notification message={notification} onClose={() => setNotification(null)} />}
-      <QuickSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} allMembers={allMembers} schedule={activeScheduleGroup.schedule} onSelectMember={setViewingProfile} onSelectTask={() => setIsSearchOpen(false)} />
+      
+      <QuickSearchModal 
+        isOpen={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)} 
+        allMembers={allMembers} 
+        schedule={activeScheduleGroup.schedule} 
+        onSelectMember={(m) => { setViewingProfile(m); setIsSearchOpen(false); }} 
+        onSelectTask={(day) => { setDetailModal({ isOpen: true, date: new Date(), schedule: day }); setIsSearchOpen(false); }} 
+      />
+
       <ProfileModal 
         member={viewingProfile} 
         schedule={activeScheduleGroup.schedule} 
@@ -216,6 +210,14 @@ const App: React.FC = () => {
         currentUser={currentUser} 
         onUpdateAvatar={(id, url) => setAllMembers(prev => prev.map(m => m.id === id ? {...m, avatar: url} : m))}
         onDeleteAccount={handleDeleteMember}
+      />
+
+      <ScheduleDetailModal 
+        isOpen={detailModal.isOpen} 
+        onClose={() => setDetailModal({ isOpen: false })} 
+        date={detailModal.date} 
+        daySchedule={detailModal.schedule} 
+        onMemberClick={setViewingProfile} 
       />
     </div>
   );
