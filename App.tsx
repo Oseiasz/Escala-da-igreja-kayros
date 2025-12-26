@@ -11,14 +11,14 @@ import ProfileModal from './components/ProfileModal';
 import QuickSearchModal from './components/QuickSearchModal';
 import ScheduleDetailModal from './components/ScheduleDetailModal';
 
-// Chaves para o Banco de Dados Local
+// Chaves estáveis para o banco de dados
 const DB_KEYS = {
-  MEMBERS: 'church_db_members_v2',
-  USERS: 'church_db_users_v2',
-  GROUPS: 'church_db_groups_v2',
-  ACTIVE_GROUP: 'church_db_active_group_v2',
-  THEME: 'church_db_theme_v2',
-  SESSION: 'church_db_active_user_v2'
+  MEMBERS: 'church_members_v3',
+  USERS: 'church_users_v3',
+  GROUPS: 'church_groups_v3',
+  ACTIVE_GROUP: 'church_active_group_v3',
+  THEME: 'church_theme_v3',
+  SESSION: 'church_session_v3'
 };
 
 const INITIAL_MEMBERS: Member[] = [
@@ -30,39 +30,33 @@ const INITIAL_USERS: User[] = [
 ];
 
 const BLANK_SCHEDULE: Schedule = [
-    { id: 'd1', dayName: 'Domingo', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd1', dayName: 'Domingo', event: 'Culto da Família', active: true, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
     { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
     { id: 'd3', dayName: 'Terça-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
     { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
     { id: 'd5', dayName: 'Quinta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
     { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
-    { id: 'd7', dayName: 'Sábado', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd7', dayName: 'Sábado', event: 'Culto de Jovens', active: true, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
 ];
 
 const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash || '#/');
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem(DB_KEYS.THEME) === 'dark' ? 'dark' : 'light'));
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [activeUserId, setActiveUserId] = useState<string | null>(localStorage.getItem(DB_KEYS.SESSION));
 
-  // Sincronização de Hash para Roteamento
-  useEffect(() => {
-    const handleHashChange = () => setRoute(window.location.hash || '#/');
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Carregamento Inicial de Membros
+  // Estado de Membros com persistência real
   const [allMembers, setAllMembers] = useState<Member[]>(() => {
     const saved = localStorage.getItem(DB_KEYS.MEMBERS);
     let members = saved ? JSON.parse(saved) : INITIAL_MEMBERS;
-    // Garante que o administrador mestre esteja sempre na lista
+    
+    // Hard check: Garante que você sempre esteja lá como Admin
     if (!members.find((m: Member) => m.email === 'ozeiasof@gmail.com')) {
         members = [...INITIAL_MEMBERS, ...members];
     }
     return members.map((m: Member) => m.email === 'ozeiasof@gmail.com' ? { ...m, role: 'admin' } : m);
   });
 
-  // Carregamento Inicial de Usuários (Login)
+  // Estado de Usuários com persistência real
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem(DB_KEYS.USERS);
     let u = saved ? JSON.parse(saved) : INITIAL_USERS;
@@ -72,34 +66,22 @@ const App: React.FC = () => {
     return u;
   });
 
-  // Carregamento Inicial de Grupos (Congregações)
   const [scheduleGroups, setScheduleGroups] = useState<ScheduleGroup[]>(() => {
       const saved = localStorage.getItem(DB_KEYS.GROUPS);
-      return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Congregação Sede', schedule: BLANK_SCHEDULE, announcements: 'Seja bem-vindo!' }];
+      return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Congregação Sede', schedule: BLANK_SCHEDULE, announcements: 'Avisos da congregação aparecerão aqui.' }];
   });
 
   const [activeScheduleGroupId, setActiveScheduleGroupId] = useState<string>(() => {
       return localStorage.getItem(DB_KEYS.ACTIVE_GROUP) || 'default';
   });
 
-  // Persistência automática no localStorage quando houver mudanças
-  useEffect(() => {
-    localStorage.setItem(DB_KEYS.MEMBERS, JSON.stringify(allMembers));
-  }, [allMembers]);
-
-  useEffect(() => {
-    localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
+  // Watchers de salvamento manual
+  useEffect(() => { localStorage.setItem(DB_KEYS.MEMBERS, JSON.stringify(allMembers)); }, [allMembers]);
+  useEffect(() => { localStorage.setItem(DB_KEYS.USERS, JSON.stringify(users)); }, [users]);
+  useEffect(() => { 
     localStorage.setItem(DB_KEYS.GROUPS, JSON.stringify(scheduleGroups));
     localStorage.setItem(DB_KEYS.ACTIVE_GROUP, activeScheduleGroupId);
   }, [scheduleGroups, activeScheduleGroupId]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem(DB_KEYS.THEME, theme);
-  }, [theme]);
 
   const currentUser = useMemo(() => allMembers.find(m => m.id === activeUserId) || null, [allMembers, activeUserId]);
   const activeScheduleGroup = useMemo(() => scheduleGroups.find(g => g.id === activeScheduleGroupId) || scheduleGroups[0], [scheduleGroups, activeScheduleGroupId]);
@@ -111,20 +93,15 @@ const App: React.FC = () => {
         localStorage.setItem(DB_KEYS.SESSION, user.memberId);
         return { success: true };
     }
-    return { success: false, message: 'Credenciais inválidas. Verifique e-mail e senha.' };
+    return { success: false, message: 'Usuário ou senha incorretos.' };
   }, [users]);
 
   const handleSignUp = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     const normalizedEmail = email.toLowerCase();
-    if (users.some(u => u.email === normalizedEmail)) return { success: false, message: 'Este e-mail já está sendo usado.' };
+    if (users.some(u => u.email === normalizedEmail)) return { success: false, message: 'E-mail já está em uso.' };
     
     const memberId = `m_${Date.now()}`;
-    const newMember: Member = { 
-        id: memberId, 
-        name, 
-        email: normalizedEmail, 
-        role: normalizedEmail === 'ozeiasof@gmail.com' ? 'admin' : 'member' 
-    };
+    const newMember: Member = { id: memberId, name, email: normalizedEmail, role: normalizedEmail === 'ozeiasof@gmail.com' ? 'admin' : 'member' };
     const newUser: User = { email: normalizedEmail, password, memberId };
 
     setAllMembers(prev => [...prev, newMember]);
@@ -154,7 +131,7 @@ const App: React.FC = () => {
   const isAdmin = currentUser.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-church-black transition-colors duration-500">
+    <div className="min-h-screen bg-black dark:bg-black transition-colors duration-500">
       <Header 
         isAdmin={isAdmin} 
         view={isAdmin && route === '#/admin' ? 'admin' : 'user'} 
@@ -162,7 +139,7 @@ const App: React.FC = () => {
         currentUser={currentUser} 
         onLogout={handleLogout} 
         theme={theme} 
-        onToggleTheme={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+        onToggleTheme={() => {}} // Forçado para dark
         onToggleSearch={() => setIsSearchOpen(true)}
         scheduleGroups={scheduleGroups} 
         activeScheduleGroupId={activeScheduleGroupId}
@@ -179,7 +156,7 @@ const App: React.FC = () => {
             allMembers={allMembers}
             users={users}
             onDeleteMember={(id) => {
-                if (id === 'admin') return; // Protege o admin principal
+                if (id === 'admin') return;
                 setAllMembers(prev => prev.filter(m => m.id !== id));
                 setUsers(prev => prev.filter(u => u.memberId !== id));
             }}
@@ -193,7 +170,7 @@ const App: React.FC = () => {
             scheduleGroups={scheduleGroups}
             activeScheduleGroupId={activeScheduleGroupId}
             onAddScheduleGroup={(name) => {
-                const newG = {id: `g_${Date.now()}`, name, schedule: BLANK_SCHEDULE, announcements: "Novo quadro de avisos."};
+                const newG = {id: `g_${Date.now()}`, name, schedule: BLANK_SCHEDULE, announcements: ""};
                 setScheduleGroups(prev => [...prev, newG]);
                 setActiveScheduleGroupId(newG.id);
             }}
