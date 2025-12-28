@@ -38,11 +38,15 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ isOpen, onClose, url }) => {
             <QRCode value={url} size={200} />
         </div>
         
-        <p className="mt-6 text-sm text-center text-slate-600 dark:text-slate-300">
-            Escaneie o código acima com a câmera do seu celular para abrir a escala.
+        <p className="mt-6 text-sm text-center text-slate-600 dark:text-slate-300 font-bold">
+            Escaneie para abrir o aplicativo.
         </p>
 
-        <div className="mt-2 text-xs text-slate-400 break-all text-center">
+        <p className="mt-2 text-[10px] text-center text-slate-400 uppercase tracking-widest font-black leading-tight">
+            Nota: Para sincronizar as escalas salvas entre dispositivos, use a "Central de Sincronização" no painel ADM.
+        </p>
+
+        <div className="mt-4 text-[9px] text-slate-400 break-all text-center opacity-50">
             {url}
         </div>
       </div>
