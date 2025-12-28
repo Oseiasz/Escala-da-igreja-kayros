@@ -12,7 +12,7 @@ import ScheduleDetailModal from './components/ScheduleDetailModal';
 import ForgotPasswordView from './components/ForgotPasswordView';
 import { KeyIcon, SpinnerIcon } from './components/icons';
 
-// Versão v10: Promoção automática a admin e proteção de super-admin ozeiasof@gmail.com
+// Versão v11: Correção do sistema de temas Light/Dark
 const DB_KEYS = {
   MEMBERS: 'church_members_v8',
   USERS: 'church_users_v8',
@@ -46,7 +46,11 @@ const BLANK_SCHEDULE: Schedule = [
 const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash || '#/');
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot'>('login');
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem(DB_KEYS.THEME) as 'light' | 'dark') || 'dark');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem(DB_KEYS.THEME);
+    if (saved === 'light' || saved === 'dark') return saved;
+    return 'dark'; // Default dark
+  });
   const [activeUserId, setActiveUserId] = useState<string | null>(localStorage.getItem(DB_KEYS.SESSION));
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [unlockPassword, setUnlockPassword] = useState('');
@@ -97,8 +101,14 @@ const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Lógica de Temas: Sincroniza a classe 'dark' no elemento HTML
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
     localStorage.setItem(DB_KEYS.THEME, theme);
   }, [theme]);
 
@@ -177,7 +187,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-church-white dark:bg-church-black transition-colors duration-500">
+    <div className="min-h-screen transition-colors duration-500">
       <Header 
         isAdmin={true} 
         view={route === '#/admin' ? 'admin' : 'user'} 
@@ -217,7 +227,6 @@ const App: React.FC = () => {
                     const targetMember = allMembers.find(m => m.id === id);
                     if (targetMember?.email === MASTER_ADMIN_EMAIL) return;
                     
-                    // Somente Ozeias pode excluir outros admins
                     if (targetMember?.role === 'admin' && !isSuperAdmin) {
                         alert("Apenas o administrador principal pode excluir outros administradores.");
                         return;
@@ -242,7 +251,6 @@ const App: React.FC = () => {
                     const targetMember = allMembers.find(m => m.id === id);
                     if (targetMember?.email === MASTER_ADMIN_EMAIL) return;
                     
-                    // Somente Ozeias pode remover o cargo de Admin
                     if (!isSuperAdmin) {
                         alert("Apenas o administrador principal pode gerenciar cargos de diretoria.");
                         return;
@@ -346,7 +354,6 @@ const App: React.FC = () => {
             const targetMember = allMembers.find(m => m.id === id);
             if (targetMember?.email === MASTER_ADMIN_EMAIL) return;
             
-            // Proteção na exclusão pela modal de perfil
             if (targetMember?.role === 'admin' && !isSuperAdmin) {
                 alert("Apenas o administrador principal pode remover outros administradores.");
                 return;
