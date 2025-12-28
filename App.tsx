@@ -11,14 +11,14 @@ import QuickSearchModal from './components/QuickSearchModal';
 import ScheduleDetailModal from './components/ScheduleDetailModal';
 import ForgotPasswordView from './components/ForgotPasswordView';
 
-// Versão v7: Reinício limpo para garantir que a nova lógica de persistência funcione sem interferências
+// Versão v8: Atualização estética para cinza grafite e restauração da gestão de admins
 const DB_KEYS = {
-  MEMBERS: 'church_members_v7',
-  USERS: 'church_users_v7',
-  GROUPS: 'church_groups_v7',
-  ACTIVE_GROUP: 'church_active_group_v7',
-  THEME: 'church_theme_v7',
-  SESSION: 'church_session_v7'
+  MEMBERS: 'church_members_v8',
+  USERS: 'church_users_v8',
+  GROUPS: 'church_groups_v8',
+  ACTIVE_GROUP: 'church_active_group_v8',
+  THEME: 'church_theme_v8',
+  SESSION: 'church_session_v8'
 };
 
 const MASTER_ADMIN_EMAIL = 'ozeiasof@gmail.com';
@@ -78,7 +78,6 @@ const App: React.FC = () => {
       return localStorage.getItem(DB_KEYS.ACTIVE_GROUP) || 'default';
   });
 
-  // Gravação Síncrona Manual para garantir que não haja perda de dados em operações críticas
   const syncToLocalStorage = (key: string, data: any) => {
     try {
       localStorage.setItem(key, JSON.stringify(data));
@@ -113,7 +112,6 @@ const App: React.FC = () => {
   const handleSignUp = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     const normalizedEmail = email.toLowerCase().trim();
     
-    // Verificação de duplicidade no estado atual e no localStorage para garantia tripla
     const currentUsers = JSON.parse(localStorage.getItem(DB_KEYS.USERS) || '[]');
     if (currentUsers.some((u: User) => u.email === normalizedEmail)) {
       return { success: false, message: 'Este e-mail já está em uso.' };
@@ -123,18 +121,15 @@ const App: React.FC = () => {
     const newMember: Member = { id: memberId, name, email: normalizedEmail, role: normalizedEmail === MASTER_ADMIN_EMAIL ? 'admin' : 'member' };
     const newUser: User = { email: normalizedEmail, password, memberId };
     
-    // 1. Grava no LocalStorage Sincronamente ANTES de atualizar o estado do React
     const updatedMembers = [...allMembers, newMember];
     const updatedUsers = [...users, newUser];
     
     syncToLocalStorage(DB_KEYS.MEMBERS, updatedMembers);
     syncToLocalStorage(DB_KEYS.USERS, updatedUsers);
     
-    // 2. Atualiza o estado para refletir na UI
     setAllMembers(updatedMembers);
     setUsers(updatedUsers);
     
-    // 3. Define a sessão
     setActiveUserId(memberId);
     localStorage.setItem(DB_KEYS.SESSION, memberId);
     
@@ -199,7 +194,9 @@ const App: React.FC = () => {
             allMembers={allMembers}
             users={users}
             onDeleteMember={(id) => {
-                if (id === 'admin') return;
+                const memberToDelete = allMembers.find(m => m.id === id);
+                if (memberToDelete?.email === MASTER_ADMIN_EMAIL) return;
+                
                 const filteredM = allMembers.filter(m => m.id !== id);
                 const filteredU = users.filter(u => u.memberId !== id);
                 setAllMembers(filteredM);
@@ -216,7 +213,9 @@ const App: React.FC = () => {
             }}
             currentUser={currentUser}
             onToggleAdmin={(id) => {
-                if (id === 'admin') return;
+                const member = allMembers.find(m => m.id === id);
+                if (member?.email === MASTER_ADMIN_EMAIL) return; // Protege o Ozeias contra auto-rebaixamento acidental
+                
                 const updated = allMembers.map(m => m.id === id ? {...m, role: m.role === 'admin' ? 'member' : 'admin'} : m);
                 setAllMembers(updated);
                 syncToLocalStorage(DB_KEYS.MEMBERS, updated);
@@ -288,7 +287,9 @@ const App: React.FC = () => {
             syncToLocalStorage(DB_KEYS.MEMBERS, updated);
         }}
         onDeleteAccount={(id) => {
-            if (id === 'admin') return;
+            const memberToDelete = allMembers.find(m => m.id === id);
+            if (memberToDelete?.email === MASTER_ADMIN_EMAIL) return;
+            
             const filteredM = allMembers.filter(m => m.id !== id);
             const filteredU = users.filter(u => u.memberId !== id);
             setAllMembers(filteredM);

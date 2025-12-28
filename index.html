@@ -14,9 +14,9 @@
         theme: {
           extend: {
             colors: {
-              'church-black': '#09090b', // Zinc 950 (Preto Suave)
-              'church-surface': '#18181b', // Zinc 900
-              'church-border': '#27272a', // Zinc 800
+              'church-black': '#121214', // Cinza Grafite Profundo
+              'church-surface': '#1e1e20', // Superfície mais clara
+              'church-border': '#2d2d30', // Bordas sutis
               'church-zinc': '#3f3f46',
               'church-white': '#f4f4f5'
             },
@@ -59,16 +59,14 @@
         -webkit-font-smoothing: antialiased;
       }
       
-      /* Tema Escuro Charcoal - Menos agressivo que o preto puro */
-      .dark body { background-color: #09090b; color: #f4f4f5; }
+      .dark body { background-color: #121214; color: #f4f4f5; }
       
       .dark .glass-card {
-        background: #18181b;
-        border: 1px solid #27272a;
+        background: #1e1e20;
+        border: 1px solid #2d2d30;
       }
       
-      /* Tema Claro */
-      body:not(.dark) { background-color: #f4f4f5; color: #09090b; }
+      body:not(.dark) { background-color: #f4f4f5; color: #121214; }
       
       .custom-scrollbar::-webkit-scrollbar { width: 5px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -76,8 +74,8 @@
       .custom-scrollbar::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
 
       .dark input, .dark textarea, .dark select {
-        background-color: #09090b !important;
-        border: 1px solid #27272a !important;
+        background-color: #121214 !important;
+        border: 1px solid #2d2d30 !important;
         color: #f4f4f5 !important;
       }
 

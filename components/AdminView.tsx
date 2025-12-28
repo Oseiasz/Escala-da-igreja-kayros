@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Schedule, ScheduleDay, Member, ScheduleGroup, User } from '../types';
-import { PdfIcon, EditIcon, TrashIcon, PlusIcon, QrCodeIcon, CalendarIcon, SearchIcon, CheckIcon, UserIcon, AdminIcon, CloseIcon, ChevronLeftIcon, ChevronRightIcon } from './icons';
+import { PdfIcon, EditIcon, TrashIcon, PlusIcon, QrCodeIcon, CalendarIcon, SearchIcon, CheckIcon, UserIcon, AdminIcon, CloseIcon, ChevronLeftIcon, ChevronRightIcon, KeyIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import MultiSelect from './MultiSelect';
 import Avatar from './Avatar';
@@ -174,20 +174,35 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                         
                         <div className="space-y-4 max-h-[500px] overflow-y-auto pr-3 custom-scrollbar min-h-[300px]">
                             {paginatedMembers.map(m => (
-                                <div key={m.id} className="p-4 bg-zinc-50 dark:bg-church-black rounded-3xl border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-all group">
+                                <div key={m.id} className={`p-4 rounded-3xl border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-all group ${m.role === 'admin' ? 'bg-zinc-100 dark:bg-zinc-800/50' : 'bg-zinc-50 dark:bg-church-black'}`}>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <Avatar member={m} className="w-12 h-12" />
                                             <div>
-                                                <h4 className="font-black text-base text-black dark:text-white">{m.name}</h4>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-black text-base text-black dark:text-white">{m.name}</h4>
+                                                    {m.role === 'admin' && <AdminIcon className="w-3.5 h-3.5 text-zinc-400" />}
+                                                </div>
                                                 <p className="text-[10px] text-zinc-500 font-medium">{m.email}</p>
                                             </div>
                                         </div>
-                                        {m.email !== 'ozeiasof@gmail.com' && (
-                                            <button onClick={() => props.onDeleteMember(m.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors">
-                                                <TrashIcon className="w-5 h-5" />
-                                            </button>
-                                        )}
+                                        <div className="flex items-center gap-1">
+                                            {/* Botão de Toggle Admin */}
+                                            {m.email !== 'ozeiasof@gmail.com' && (
+                                                <button 
+                                                    onClick={() => props.onToggleAdmin(m.id)} 
+                                                    title={m.role === 'admin' ? "Remover de Admin" : "Tornar Admin"}
+                                                    className={`p-2 transition-colors rounded-xl ${m.role === 'admin' ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/30' : 'text-zinc-400 hover:text-indigo-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+                                                >
+                                                    <KeyIcon className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                            {m.email !== 'ozeiasof@gmail.com' && (
+                                                <button onClick={() => props.onDeleteMember(m.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors">
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
