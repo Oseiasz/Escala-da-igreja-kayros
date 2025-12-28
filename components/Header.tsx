@@ -28,7 +28,7 @@ const Header: React.FC<HeaderProps> = ({
     };
   
   return (
-    <header className="sticky top-0 z-50 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 h-20 sm:h-24 flex items-center">
+    <header className="sticky top-0 z-50 bg-white/90 dark:bg-church-black/90 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 h-20 sm:h-24 flex items-center">
       <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 sm:gap-8">
@@ -45,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({
                 <select
                     value={activeScheduleGroupId}
                     onChange={(e) => onSetActiveScheduleGroupId(e.target.value)}
-                    className="block w-full min-w-[200px] px-4 py-2 text-sm font-black bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl text-black dark:text-white cursor-pointer transition-all hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                    className="block w-full min-w-[200px] px-4 py-2 text-sm font-black bg-zinc-100 dark:bg-church-surface border-none rounded-xl text-black dark:text-white cursor-pointer transition-all hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 >
                     {scheduleGroups.map(group => (
                         <option key={group.id} value={group.id}>{group.name}</option>
@@ -68,24 +68,23 @@ const Header: React.FC<HeaderProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-4 pl-4 sm:pl-6 border-l border-zinc-200 dark:border-zinc-800">
-                        {isAdmin && (
-                            <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl">
-                                <button
-                                    onClick={() => handleNavigation('#/')}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${view === 'user' ? 'bg-white dark:bg-white text-black shadow-sm' : 'text-zinc-500 dark:text-zinc-600 hover:text-black dark:hover:text-white'}`}
-                                >
-                                    <UserIcon className="w-4 h-4" />
-                                    <span className="hidden xl:inline">Geral</span>
-                                </button>
-                                <button
-                                    onClick={() => handleNavigation('#/admin')}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${view === 'admin' ? 'bg-white dark:bg-white text-black shadow-sm' : 'text-zinc-500 dark:text-zinc-600 hover:text-black dark:hover:text-white'}`}
-                                >
-                                    <AdminIcon className="w-4 h-4" />
-                                    <span className="hidden xl:inline">Gestão</span>
-                                </button>
-                            </div>
-                        )}
+                        {/* Removido o check isAdmin && para que o menu de navegação apareça para todos */}
+                        <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-church-surface rounded-xl">
+                            <button
+                                onClick={() => handleNavigation('#/')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${view === 'user' ? 'bg-white dark:bg-white text-black shadow-sm' : 'text-zinc-500 dark:text-zinc-600 hover:text-black dark:hover:text-white'}`}
+                            >
+                                <UserIcon className="w-4 h-4" />
+                                <span className="hidden xl:inline">Geral</span>
+                            </button>
+                            <button
+                                onClick={() => handleNavigation('#/admin')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${view === 'admin' ? 'bg-white dark:bg-white text-black shadow-sm' : 'text-zinc-500 dark:text-zinc-600 hover:text-black dark:hover:text-white'}`}
+                            >
+                                <AdminIcon className="w-4 h-4" />
+                                <span className="hidden xl:inline">Gestão</span>
+                            </button>
+                        </div>
                         
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigation('#/profile')}>
                             <Avatar member={currentUser} className="w-10 h-10 border border-zinc-200 dark:border-zinc-800" />

@@ -51,6 +51,7 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
     const [newCongregationName, setNewCongregationName] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
+    const isSuperAdmin = props.currentUser.email === 'ozeiasof@gmail.com';
     const editingDay = useMemo(() => props.schedule.find(d => d.id === editingDayId), [props.schedule, editingDayId]);
 
     const filteredMembers = useMemo(() => {
@@ -187,8 +188,8 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            {/* Botão de Toggle Admin */}
-                                            {m.email !== 'ozeiasof@gmail.com' && (
+                                            {/* Botão de Toggle Admin - Apenas visível/ativo para o Super Admin */}
+                                            {isSuperAdmin && m.email !== 'ozeiasof@gmail.com' && (
                                                 <button 
                                                     onClick={() => props.onToggleAdmin(m.id)} 
                                                     title={m.role === 'admin' ? "Remover de Admin" : "Tornar Admin"}
@@ -197,7 +198,8 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                                                     <KeyIcon className="w-5 h-5" />
                                                 </button>
                                             )}
-                                            {m.email !== 'ozeiasof@gmail.com' && (
+                                            {/* Botão de Deletar - Somente para Super Admin se o alvo for Admin */}
+                                            {m.email !== 'ozeiasof@gmail.com' && (isSuperAdmin || m.role !== 'admin') && (
                                                 <button onClick={() => props.onDeleteMember(m.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors">
                                                     <TrashIcon className="w-5 h-5" />
                                                 </button>
