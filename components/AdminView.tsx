@@ -148,14 +148,19 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                                     className={`group relative p-6 rounded-3xl border-2 text-left transition-all duration-300 active:scale-[0.98] ${day.active ? 'bg-zinc-50 dark:bg-church-black border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600' : 'bg-transparent border-transparent opacity-20'}`}
                                 >
                                     <div className="flex justify-between items-start mb-3">
-                                        <span className="text-xl font-black text-black dark:text-white">{day.dayName}</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-xl font-black text-black dark:text-white leading-tight">
+                                                {day.dayName}
+                                                {day.dateLabel && <span className="ml-2 text-zinc-400">({day.dateLabel})</span>}
+                                            </span>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mt-1">
+                                                {day.active ? (day.event || 'Evento Ativo') : 'Sem Programação'}
+                                            </p>
+                                        </div>
                                         <div className="p-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800">
                                             <EditIcon className="w-5 h-5 text-zinc-400" />
                                         </div>
                                     </div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                        {day.active ? (day.event || 'Evento Ativo') : 'Sem Programação'}
-                                    </p>
                                 </button>
                             ))}
                         </div>
@@ -188,7 +193,6 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            {/* Botão de Toggle Admin - Apenas visível/ativo para o Super Admin */}
                                             {isSuperAdmin && m.email !== 'ozeiasof@gmail.com' && (
                                                 <button 
                                                     onClick={() => props.onToggleAdmin(m.id)} 
@@ -198,7 +202,6 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                                                     <KeyIcon className="w-5 h-5" />
                                                 </button>
                                             )}
-                                            {/* Botão de Deletar - Somente para Super Admin se o alvo for Admin */}
                                             {m.email !== 'ozeiasof@gmail.com' && (isSuperAdmin || m.role !== 'admin') && (
                                                 <button onClick={() => props.onDeleteMember(m.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors">
                                                     <TrashIcon className="w-5 h-5" />
@@ -235,9 +238,21 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                             </div>
                             {editingDay.active && (
                                 <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest text-zinc-400">Título do Culto</label>
-                                        <input type="text" value={editingDay.event} onChange={e => updateDayField(editingDay.id, 'event', e.target.value)} className="w-full p-5 bg-zinc-50 dark:bg-church-black rounded-2xl border border-zinc-200 dark:border-zinc-800 font-bold" />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase tracking-widest text-zinc-400">Dia do Mês / Data (Opcional)</label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Ex: 05, Dia 12, Sábado 15"
+                                                value={editingDay.dateLabel || ''} 
+                                                onChange={e => updateDayField(editingDay.id, 'dateLabel', e.target.value)} 
+                                                className="w-full p-5 bg-zinc-50 dark:bg-church-black rounded-2xl border border-zinc-200 dark:border-zinc-800 font-bold" 
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase tracking-widest text-zinc-400">Título do Culto</label>
+                                            <input type="text" value={editingDay.event} onChange={e => updateDayField(editingDay.id, 'event', e.target.value)} className="w-full p-5 bg-zinc-50 dark:bg-church-black rounded-2xl border border-zinc-200 dark:border-zinc-800 font-bold" />
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-1 gap-6">
                                         <MultiSelect label="Dirigentes" allOptions={props.allMembers} selectedOptions={editingDay.worshipLeaders} onChange={s => updateDayField(editingDay.id, 'worshipLeaders', s)} />

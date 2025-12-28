@@ -115,6 +115,7 @@ const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcemen
             }}>
                 <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
                     {day.dayName}
+                    {day.dateLabel && <span style={{ color: '#94a3b8', fontSize: '11px', marginLeft: '6px' }}>({day.dateLabel})</span>}
                 </h3>
                 <span style={{ fontSize: '10px', fontWeight: '600', color: '#4f46e5', backgroundColor: '#eef2ff', padding: '2px 6px', borderRadius: '4px' }}>
                     {day.event}

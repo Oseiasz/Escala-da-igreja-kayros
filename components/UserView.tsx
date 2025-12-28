@@ -82,7 +82,10 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, onMemberCl
                     {schedule.filter(d => d.active).map(day => (
                         <div key={day.id} className="bg-zinc-50 dark:bg-black rounded-[2rem] p-8 border border-zinc-200 dark:border-zinc-900 flex flex-col gap-6 transition-all hover:scale-[1.01]">
                             <div className="border-b border-zinc-200 dark:border-zinc-800 pb-4">
-                                <h3 className="font-black text-2xl text-black dark:text-white">{day.dayName}</h3>
+                                <h3 className="font-black text-2xl text-black dark:text-white">
+                                    {day.dayName}
+                                    {day.dateLabel && <span className="ml-2 text-zinc-400 font-bold">({day.dateLabel})</span>}
+                                </h3>
                                 <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-1">{day.event}</p>
                             </div>
                             <div className="space-y-5">

@@ -12,7 +12,7 @@ import ScheduleDetailModal from './components/ScheduleDetailModal';
 import ForgotPasswordView from './components/ForgotPasswordView';
 import { KeyIcon, SpinnerIcon } from './components/icons';
 
-// Versão v11: Correção do sistema de temas Light/Dark
+// Versão v12: Adição de suporte a dia do mês/data específica na escala
 const DB_KEYS = {
   MEMBERS: 'church_members_v8',
   USERS: 'church_users_v8',
@@ -34,13 +34,13 @@ const INITIAL_USERS: User[] = [
 ];
 
 const BLANK_SCHEDULE: Schedule = [
-    { id: 'd1', dayName: 'Domingo', event: 'Culto da Família', active: true, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
-    { id: 'd2', dayName: 'Segunda-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
-    { id: 'd3', dayName: 'Terça-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
-    { id: 'd4', dayName: 'Quarta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
-    { id: 'd5', dayName: 'Quinta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
-    { id: 'd6', dayName: 'Sexta-feira', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
-    { id: 'd7', dayName: 'Sábado', event: 'Culto de Jovens', active: true, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd1', dayName: 'Domingo', dateLabel: '', event: 'Culto da Família', active: true, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd2', dayName: 'Segunda-feira', dateLabel: '', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd3', dayName: 'Terça-feira', dateLabel: '', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd4', dayName: 'Quarta-feira', dateLabel: '', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd5', dayName: 'Quinta-feira', dateLabel: '', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd6', dayName: 'Sexta-feira', dateLabel: '', event: '', active: false, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
+    { id: 'd7', dayName: 'Sábado', dateLabel: '', event: 'Culto de Jovens', active: true, doorkeepers: [], hymnSingers: [], worshipLeaders: [], preachers: [] },
 ];
 
 const App: React.FC = () => {

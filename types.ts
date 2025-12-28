@@ -25,6 +25,7 @@ export interface ScheduleParticipant {
 export interface ScheduleDay {
   id: string;
   dayName: string;
+  dateLabel?: string; // Ex: "05", "Dia 12", "Data fixa"
   event: string;
   doorkeepers: ScheduleParticipant[];
   hymnSingers: ScheduleParticipant[];
