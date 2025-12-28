@@ -1,90 +1,124 @@
-// sw.js
+// sw.js - Optimized for Church Schedule App
 
-const CACHE_NAME = 'church-schedule-cache-v1';
-const URLS_TO_CACHE = [
+const CACHE_NAME = 'church-schedule-v5'; // Increment version for cache busting
+const OFFLINE_URL = '/index.html';
+
+const PRECACHE_ASSETS = [
   '/',
   '/index.html',
+  '/index.tsx', // Precache the entry script
   '/vite.svg',
-  // External assets that need to be available offline
+  'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-  'https://cdn.tailwindcss.com'
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap'
 ];
 
-// --- INSTALL: Cache critical assets ---
+// --- INSTALL: Precache the Application Shell ---
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Service Worker: Caching files');
-        const cachePromises = URLS_TO_CACHE.map(urlToCache => {
-            return cache.add(urlToCache).catch(err => {
-                console.warn(`SW: Failed to cache ${urlToCache}`, err);
-            });
-        });
-        return Promise.all(cachePromises);
+        console.log('[SW] Pre-caching application shell');
+        return cache.addAll(PRECACHE_ASSETS);
       })
-      .then(() => self.skipWaiting()) // Force activation
+      .then(() => self.skipWaiting())
   );
 });
 
-// --- ACTIVATE: Clean up old caches ---
+// --- ACTIVATE: Clean up stale caches ---
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.filter(cacheName => cacheName !== CACHE_NAME)
-                 .map(cacheName => caches.delete(cacheName))
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('[SW] Removing old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
       );
-    }).then(() => clients.claim()) // Take control of clients
+    }).then(() => {
+      console.log('[SW] Activated and taking control');
+      return self.clients.claim();
+    })
   );
 });
 
-// --- FETCH: Serve from cache, fall back to network ---
+// --- FETCH STRATEGY: Stale-While-Revalidate for Assets ---
 self.addEventListener('fetch', (event) => {
-  // Only apply cache strategy to GET requests
-  if (event.request.method !== 'GET') {
+  // We only handle GET requests
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Strategy: Special handling for navigation requests (the App Shell)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(OFFLINE_URL);
+      })
+    );
     return;
   }
-  
+
+  // Strategy: Stale-While-Revalidate for other assets
   event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        // If we have a response in the cache, return it.
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        // If not in cache, fetch from the network.
-        return fetch(event.request).then((networkResponse) => {
-          // Check for valid response
-          if (!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
-            return networkResponse;
-          }
-
-          // Clone the response and cache it for future use.
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Cache successful responses for future use
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          
-          return networkResponse;
-        });
-      })
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch((err) => {
+        // Silent fail for network errors, we rely on the cache
+        console.debug('[SW] Network fetch failed, returning cache if available', err);
+      });
+
+      return cachedResponse || fetchPromise;
+    })
   );
 });
 
-
-// --- MESSAGE: Handle push notifications from the app ---
+// --- MESSAGE: Push Notification Support ---
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const { title, body } = event.data.payload;
+    const options = {
+      body: body,
+      icon: '/vite.svg',
+      badge: '/vite.svg',
+      vibrate: [100, 50, 100],
+      data: {
+        dateOfArrival: Date.now(),
+        primaryKey: 1
+      },
+      actions: [
+        { action: 'explore', title: 'Ver Escala', icon: '/vite.svg' },
+        { action: 'close', title: 'Fechar', icon: '/vite.svg' },
+      ]
+    };
+
     event.waitUntil(
-      self.registration.showNotification(title, {
-        body: body,
-        icon: '/vite.svg',
-        badge: '/vite.svg',
+      self.registration.showNotification(title, options)
+    );
+  }
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  if (event.action === 'explore') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then((clientList) => {
+        if (clientList.length > 0) {
+          return clientList[0].focus();
+        }
+        return clients.openWindow('/');
       })
     );
   }

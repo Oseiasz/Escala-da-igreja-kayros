@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Schedule, ScheduleDay, Member } from '../types';
-import { ChevronLeftIcon, ChevronRightIcon, UserIcon, EditIcon } from './icons';
+import { ChevronLeftIcon, ChevronRightIcon, EditIcon } from './icons';
 
 interface CalendarProps {
     viewDate: Date;
@@ -22,7 +22,7 @@ const areDatesSameDay = (d1: Date, d2: Date) =>
   d1.getMonth() === d2.getMonth() &&
   d1.getDate() === d2.getDate();
 
-const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onDateClick, onMemberClick, isAdmin = false }) => {
+const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onDateClick, isAdmin = false }) => {
     
     const getDaysForMonth = () => {
         const days = [];
@@ -34,11 +34,9 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
             date.setDate(date.getDate() - (firstDayOfMonth.getDay() - i));
             days.push({ date, isCurrentMonth: false });
         }
-        
         for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
             days.push({ date: new Date(viewDate.getFullYear(), viewDate.getMonth(), i), isCurrentMonth: true });
         }
-        
         const lastDayOfMonthWeekday = lastDayOfMonth.getDay();
         if (lastDayOfMonthWeekday < 6) {
             for (let i = 1; i < 7 - lastDayOfMonthWeekday; i++) {
@@ -53,14 +51,6 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
     const calendarDays = getDaysForMonth();
     const today = new Date();
 
-    const handlePrevMonth = () => {
-        onNavigate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
-    };
-
-    const handleNextMonth = () => {
-        onNavigate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
-    };
-
     const getScheduleForDay = (date: Date): ScheduleDay | undefined => {
         const dayName = DAY_NAMES_MAP[date.getDay()];
         return schedule.find(d => d.dayName === dayName);
@@ -69,19 +59,19 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
     return (
         <div>
             <div className="flex justify-between items-center mb-8">
-                <button onClick={handlePrevMonth} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-emerald-500/10 transition-all border border-transparent dark:border-emerald-500/20" aria-label="Mês anterior">
-                    <ChevronLeftIcon className="w-7 h-7 text-slate-500 dark:text-emerald-500" />
+                <button onClick={() => onNavigate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all">
+                    <ChevronLeftIcon className="w-6 h-6" />
                 </button>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-700 dark:text-white capitalize tracking-tight">
+                <h2 className="text-xl font-black text-black dark:text-white uppercase tracking-widest">
                     {viewDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                 </h2>
-                <button onClick={handleNextMonth} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-emerald-500/10 transition-all border border-transparent dark:border-emerald-500/20" aria-label="Próximo mês">
-                    <ChevronRightIcon className="w-7 h-7 text-slate-500 dark:text-emerald-500" />
+                <button onClick={() => onNavigate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))} className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all">
+                    <ChevronRightIcon className="w-6 h-6" />
                 </button>
             </div>
-            <div className="grid grid-cols-7 gap-px bg-slate-200 dark:bg-emerald-500/20 border border-slate-200 dark:border-emerald-500/30 rounded-[2rem] overflow-hidden shadow-2xl">
+            <div className="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
                 {WEEKDAY_NAMES.map(day => (
-                    <div key={day} className="text-center text-[11px] font-black uppercase text-slate-500 dark:text-emerald-500/80 py-4 bg-slate-50 dark:bg-black tracking-widest">
+                    <div key={day} className="text-center text-[10px] font-black uppercase text-zinc-400 py-4 bg-zinc-50 dark:bg-black tracking-widest">
                         {day}
                     </div>
                 ))}
@@ -90,35 +80,25 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
                     const isToday = areDatesSameDay(date, today);
                     const hasActiveEvent = daySchedule?.active === true;
                     
-                    const cellClasses = `p-2 min-h-[120px] transition-all duration-300 relative
-                        ${isCurrentMonth ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50 dark:bg-black/40 text-slate-400 dark:text-zinc-800'}
-                        ${hasActiveEvent && isCurrentMonth ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-emerald-500/5' : ''}
-                    `;
-                    const dateClasses = `flex items-center justify-center w-9 h-9 rounded-2xl text-base transition-all
-                        ${isToday ? 'bg-indigo-600 dark:bg-emerald-600 text-white font-black shadow-lg shadow-indigo-200 dark:shadow-emerald-500/30 scale-110' : ''}
-                        ${!isToday && hasActiveEvent ? 'font-black text-indigo-700 dark:text-emerald-400 text-lg' : 'font-bold dark:text-zinc-400'}
-                        ${!isCurrentMonth ? 'opacity-30' : ''}
-                    `;
-
                     return (
-                        <div key={index} className={cellClasses} onClick={() => onDateClick(date, daySchedule)}>
-                            <div className="flex justify-center mb-2">
-                                <span className={dateClasses}>{date.getDate()}</span>
+                        <div key={index} className={`p-2 min-h-[110px] relative transition-all duration-300 ${isCurrentMonth ? 'bg-white dark:bg-zinc-900' : 'bg-zinc-50 dark:bg-black/40 text-zinc-300'}`} onClick={() => onDateClick(date, daySchedule)}>
+                            <div className="flex justify-center mb-1">
+                                <span className={`flex items-center justify-center w-8 h-8 rounded-xl text-sm font-black transition-all ${isToday ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg scale-110' : isCurrentMonth ? 'text-zinc-600 dark:text-zinc-400' : 'opacity-20'}`}>
+                                    {date.getDate()}
+                                </span>
                             </div>
                             {isCurrentMonth && hasActiveEvent && (
-                                <div className="text-center">
-                                     <p className="text-[10px] font-black text-indigo-800 dark:text-emerald-500 uppercase leading-tight truncate px-1 tracking-tighter shadow-black">{daySchedule?.event}</p>
-                                     <div className="flex justify-center mt-3 gap-1.5 flex-wrap">
-                                         {daySchedule?.worshipLeaders && daySchedule.worshipLeaders.length > 0 && <div className="w-2 h-2 bg-purple-500 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" />}
-                                         {daySchedule?.preachers && daySchedule.preachers.length > 0 && <div className="w-2 h-2 bg-orange-500 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" />}
-                                         {daySchedule?.doorkeepers.length > 0 && <div className="w-2 h-2 bg-blue-500 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" />}
-                                         {daySchedule?.hymnSingers.length > 0 && <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full shadow-[0_0_10px_emerald]" />}
+                                <div className="text-center px-1">
+                                     <p className="text-[9px] font-black text-black dark:text-white uppercase truncate tracking-tighter">{daySchedule?.event}</p>
+                                     <div className="flex justify-center mt-2 gap-1 flex-wrap">
+                                         {daySchedule?.worshipLeaders && daySchedule.worshipLeaders.length > 0 && <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full" />}
+                                         {daySchedule?.preachers && daySchedule.preachers.length > 0 && <div className="w-1.5 h-1.5 bg-zinc-400 dark:bg-zinc-500 rounded-full" />}
                                      </div>
                                 </div>
                             )}
                             {isAdmin && isCurrentMonth && hasActiveEvent && (
-                                <button className="absolute bottom-3 right-3 p-1.5 text-slate-300 dark:text-zinc-700 hover:text-indigo-600 dark:hover:text-emerald-400 transition-colors" onClick={(e) => { e.stopPropagation(); onDateClick(date, daySchedule);}}>
-                                    <EditIcon className="w-5 h-5" />
+                                <button className="absolute bottom-2 right-2 p-1 text-zinc-300 hover:text-black dark:hover:text-white transition-colors" onClick={(e) => { e.stopPropagation(); onDateClick(date, daySchedule);}}>
+                                    <EditIcon className="w-4 h-4" />
                                 </button>
                             )}
                         </div>
@@ -126,10 +106,8 @@ const Calendar: React.FC<CalendarProps> = ({ viewDate, schedule, onNavigate, onD
                 })}
             </div>
             <div className="mt-8 flex flex-wrap justify-center gap-6">
-                <div className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-emerald-500/20 shadow-sm"><div className="w-3 h-3 bg-purple-400 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-500 tracking-widest">Dirigente</span></div>
-                <div className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-emerald-500/20 shadow-sm"><div className="w-3 h-3 bg-orange-400 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-500 tracking-widest">Pregador</span></div>
-                <div className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-emerald-500/20 shadow-sm"><div className="w-3 h-3 bg-blue-400 dark:bg-emerald-400 rounded-full shadow-[0_0_5px_emerald]" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-500 tracking-widest">Portaria</span></div>
-                <div className="flex items-center gap-2.5 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-emerald-500/20 shadow-sm"><div className="w-3 h-3 bg-emerald-400 dark:bg-emerald-400 rounded-full shadow-[0_0_8px_emerald]" /><span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-500 tracking-widest">Louvor</span></div>
+                <div className="flex items-center gap-2 text-[9px] font-black uppercase text-zinc-400 tracking-widest"><div className="w-2 h-2 bg-black dark:bg-white rounded-full" /> Dirigente</div>
+                <div className="flex items-center gap-2 text-[9px] font-black uppercase text-zinc-400 tracking-widest"><div className="w-2 h-2 bg-zinc-300 dark:bg-zinc-600 rounded-full" /> Membros</div>
             </div>
         </div>
     );

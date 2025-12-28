@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
-import { EyeIcon, EyeSlashIcon, SpinnerIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, SpinnerIcon, CalendarIcon } from './icons';
 
 interface LoginViewProps {
-  onLogin: (email: string, password: string, rememberMe: boolean) => Promise<{ success: boolean; message?: string }>;
+  onLogin: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   onSwitchToSignUp: () => void;
   onForgotPassword: () => void;
 }
@@ -10,7 +11,6 @@ interface LoginViewProps {
 const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,131 +19,90 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSwitchToSignUp, onForg
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    const result = await onLogin(email, password, rememberMe);
-    if (!result.success) {
-      setError(result.message || 'Verifique se o e-mail e a senha estão corretos e tente novamente.');
+    try {
+        const result = await onLogin(email, password);
+        if (!result.success) {
+            setError(result.message || 'Credenciais inválidas.');
+        }
+    } catch (err) {
+        setError('Erro de conexão. Tente novamente.');
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
-  const inputBaseClasses = "w-full px-3 py-2 placeholder-slate-400 border rounded-md shadow-sm appearance-none focus:outline-none sm:text-sm";
-  const inputErrorClasses = "border-red-500 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 dark:bg-red-900/20 dark:text-red-200";
-  const inputNormalClasses = "border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white";
-
-
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
-        <div>
-          <h2 className="text-3xl font-extrabold text-center text-slate-900 dark:text-slate-100">
-            Acessar Escala
+    <div className="flex items-center justify-center min-h-screen bg-church-white dark:bg-church-black transition-colors duration-500">
+      <div className="w-full max-w-md p-10 space-y-8 bg-white dark:bg-church-surface rounded-[3rem] border border-zinc-200 dark:border-zinc-800 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 bg-black dark:bg-zinc-800 rounded-[1.5rem] flex items-center justify-center shadow-xl">
+             <CalendarIcon className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-black text-black dark:text-white tracking-tighter uppercase">
+            Acesso à Escala
           </h2>
-          <p className="mt-2 text-sm text-center text-slate-600 dark:text-slate-400">
-            Faça login para visualizar a escala de trabalho.
+          <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest">
+            Entre para gerenciar atividades
           </p>
         </div>
+
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Endereço de e-mail
-            </label>
-            <div className="mt-1">
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (error) setError(null);
-                }}
-                className={`${inputBaseClasses} ${error ? inputErrorClasses : inputNormalClasses}`}
-              />
-            </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-4">E-mail</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-6 py-4 bg-zinc-50 dark:bg-church-black border border-zinc-200 dark:border-zinc-800 rounded-2xl text-black dark:text-white font-bold outline-none focus:ring-2 focus:ring-zinc-400 transition-all"
+              placeholder="seu@email.com"
+            />
           </div>
 
-          <div>
-            <label htmlFor="password"className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Senha
-            </label>
-            <div className="relative mt-1">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-4">Senha</label>
+            <div className="relative">
               <input
-                id="password"
-                name="password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (error) setError(null);
-                }}
-                className={`${inputBaseClasses} ${error ? inputErrorClasses : inputNormalClasses} pr-10`}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-6 py-4 bg-zinc-50 dark:bg-church-black border border-zinc-200 dark:border-zinc-800 rounded-2xl text-black dark:text-white font-bold outline-none focus:ring-2 focus:ring-zinc-400 transition-all pr-14"
+                placeholder="••••••••"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-700"
-                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
               >
                 {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
               </button>
             </div>
           </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-                <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <label htmlFor="remember-me" className="block ml-2 text-sm text-slate-900 dark:text-slate-200">
-                    Lembrar de mim
-                </label>
-            </div>
-            <div className="text-sm">
-                <button
-                    type="button"
-                    onClick={onForgotPassword}
-                    className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus:underline"
-                >
-                    Esqueceu sua senha?
-                </button>
-            </div>
-          </div>
 
           {error && (
-            <div className="p-3 text-sm text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-300 border-l-4 border-red-500 rounded-md" role="alert">
-              <p>{error}</p>
+            <div className="p-4 text-xs font-black uppercase tracking-widest text-center text-red-500 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-xl animate-shake">
+              {error}
             </div>
           )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="relative flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md group hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed"
-            >
-              {isLoading ? <SpinnerIcon className="w-5 h-5" /> : 'Entrar'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-5 bg-black dark:bg-zinc-800 text-white font-black rounded-2xl shadow-xl hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-3"
+          >
+            {isLoading ? <SpinnerIcon className="w-6 h-6" /> : 'Entrar na Conta'}
+          </button>
         </form>
-         <p className="mt-6 text-sm text-center text-slate-600 dark:text-slate-400">
-            Não tem uma conta?{' '}
-            <button
-                type="button"
-                onClick={onSwitchToSignUp}
-                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus:underline"
-            >
-                Crie uma aqui
-            </button>
-        </p>
+
+        <div className="text-center">
+            <p className="text-xs font-bold text-zinc-500">
+              Não tem acesso?{' '}
+              <button type="button" onClick={onSwitchToSignUp} className="text-black dark:text-zinc-300 font-black hover:underline">
+                  Cadastre-se aqui
+              </button>
+            </p>
+        </div>
       </div>
     </div>
   );

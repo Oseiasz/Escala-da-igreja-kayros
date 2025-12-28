@@ -6,7 +6,7 @@
     <meta name="google" content="notranslate" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Escala Igreja - Black & Green</title>
+    <title>Escala Igreja - Charcoal Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -14,11 +14,22 @@
         theme: {
           extend: {
             colors: {
-              'church-black': '#000000',
-              'church-surface': '#0a0a0a',
-              'church-green': '#10b981',
-              'church-lime': '#bef264',
-              'church-border': '#166534'
+              'church-black': '#09090b', // Zinc 950 (Preto Suave)
+              'church-surface': '#18181b', // Zinc 900
+              'church-border': '#27272a', // Zinc 800
+              'church-zinc': '#3f3f46',
+              'church-white': '#f4f4f5'
+            },
+            animation: {
+              'shake': 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both',
+            },
+            keyframes: {
+              shake: {
+                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+              }
             }
           }
         }
@@ -34,40 +45,54 @@
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "react-qr-code": "https://esm.sh/react-qr-code@2.0.15?external=react,react-dom",
     "@emailjs/browser": "https://esm.sh/@emailjs/browser@3.11.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
 </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
       
-      body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+      body { 
+        font-family: 'Inter', sans-serif; 
+        transition: background-color 0.3s ease, color 0.3s ease; 
+        -webkit-font-smoothing: antialiased;
+      }
       
-      .dark body { background-color: #000000; color: #ffffff; }
-      
-      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-      .custom-scrollbar::-webkit-scrollbar-track { background: #000000; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+      /* Tema Escuro Charcoal - Menos agressivo que o preto puro */
+      .dark body { background-color: #09090b; color: #f4f4f5; }
       
       .dark .glass-card {
-        background: #0a0a0a;
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        background: #18181b;
+        border: 1px solid #27272a;
       }
+      
+      /* Tema Claro */
+      body:not(.dark) { background-color: #f4f4f5; color: #09090b; }
+      
+      .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
 
       .dark input, .dark textarea, .dark select {
-        background-color: #000000 !important;
-        border: 1px solid #166534 !important;
-        color: #10b981 !important;
+        background-color: #09090b !important;
+        border: 1px solid #27272a !important;
+        color: #f4f4f5 !important;
       }
 
-      .dark input::placeholder {
-        color: #064e3b !important;
+      .dark input::placeholder { color: #71717a; }
+      
+      input:focus, textarea:focus, select:focus {
+        border-color: #a1a1aa !important;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(161, 161, 170, 0.2);
       }
+
+      .animate-shake { animation: shake 0.4s ease-in-out; }
     </style>
   </head>
-  <body class="dark transition-colors duration-300">
+  <body class="dark">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
