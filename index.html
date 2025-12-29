@@ -6,7 +6,7 @@
     <meta name="google" content="notranslate" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Escala Igreja - Charcoal Edition</title>
+    <title>Escala Igreja - Supabase Realtime</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -14,14 +14,15 @@
         theme: {
           extend: {
             colors: {
-              'church-black': '#121214', // Cinza Grafite Profundo
-              'church-surface': '#1e1e20', // Superfície mais clara
-              'church-border': '#2d2d30', // Bordas sutis
+              'church-black': '#121214',
+              'church-surface': '#1e1e20',
+              'church-border': '#2d2d30',
               'church-zinc': '#3f3f46',
               'church-white': '#f4f4f5'
             },
             animation: {
               'shake': 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both',
+              'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             },
             keyframes: {
               shake: {
@@ -45,6 +46,7 @@
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "react-qr-code": "https://esm.sh/react-qr-code@2.0.15?external=react,react-dom",
     "@emailjs/browser": "https://esm.sh/@emailjs/browser@3.11.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7",
     "react/": "https://esm.sh/react@^19.2.3/",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
@@ -52,57 +54,11 @@
 </script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-      
-      body { 
-        font-family: 'Inter', sans-serif; 
-        transition: background-color 0.3s ease, color 0.3s ease; 
-        -webkit-font-smoothing: antialiased;
-        background-color: #f4f4f5; /* church-white */
-        color: #121214; /* church-black */
-      }
-      
-      .dark body { 
-        background-color: #121214; /* church-black */
-        color: #f4f4f5; /* church-white */
-      }
-      
-      .glass-card {
-        background: white;
-        border: 1px solid #e2e8f0;
-      }
-
-      .dark .glass-card {
-        background: #1e1e20;
-        border: 1px solid #2d2d30;
-      }
-      
+      body { font-family: 'Inter', sans-serif; background-color: #f4f4f5; color: #121214; }
+      .dark body { background-color: #121214; color: #f4f4f5; }
       .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
       .custom-scrollbar::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
-
-      input, textarea, select {
-        background-color: white !important;
-        border: 1px solid #e2e8f0 !important;
-        color: #121214 !important;
-      }
-
-      .dark input, .dark textarea, .dark select {
-        background-color: #121214 !important;
-        border: 1px solid #2d2d30 !important;
-        color: #f4f4f5 !important;
-      }
-
-      input::placeholder { color: #94a3b8; }
-      .dark input::placeholder { color: #71717a; }
-      
-      input:focus, textarea:focus, select:focus {
-        border-color: #a1a1aa !important;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(161, 161, 170, 0.2);
-      }
-
-      .animate-shake { animation: shake 0.4s ease-in-out; }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; }
     </style>
   </head>
   <body>
