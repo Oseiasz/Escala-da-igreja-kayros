@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Schedule, Member, ScheduleDay, ScheduleParticipant } from '../types';
 import Avatar from './Avatar';
 import PushNotificationManager from './PushNotificationManager';
-import { PdfIcon, CalendarIcon, ListBulletIcon, KeyIcon, MusicalNoteIcon, QrCodeIcon, MicrophoneIcon, BookOpenIcon } from './icons';
+import { PdfIcon, CalendarIcon, ListBulletIcon } from './icons';
 import { exportScheduleToPDF } from '../services/pdfService';
 import Calendar from './Calendar';
-import QRCodeModal from './QRCodeModal';
+import SchedulePDFView from './SchedulePDFView';
 
 interface UserViewProps {
   schedule: Schedule;
@@ -41,9 +41,11 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, onMemberCl
   const handleSavePdf = async () => {
       setIsSavingPdf(true);
       try {
-          await exportScheduleToPDF('schedule-to-print-user-offscreen', `escala.pdf`);
+          // Captura o elemento oculto renderizado no final do componente
+          await exportScheduleToPDF('schedule-to-print-user-offscreen', `escala-${scheduleName.toLowerCase().replace(/\s+/g, '-')}.pdf`);
       } catch (error) {
           console.error(error);
+          alert("Houve um problema ao gerar o PDF. Tente novamente.");
       } finally {
           setIsSavingPdf(false);
       }
@@ -63,8 +65,13 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, onMemberCl
                         <button onClick={() => setViewMode('calendar')} className={`p-2.5 rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white dark:bg-zinc-800 text-black dark:text-white shadow-sm' : 'text-zinc-400'}`}><CalendarIcon className="w-5 h-5" /></button>
                         <button onClick={() => setViewMode('list')} className={`p-2.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-zinc-800 text-black dark:text-white shadow-sm' : 'text-zinc-400'}`}><ListBulletIcon className="w-5 h-5" /></button>
                     </div>
-                    <button onClick={handleSavePdf} disabled={isSavingPdf} className="px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black font-black text-xs rounded-xl shadow-lg hover:opacity-90 transition-all flex items-center gap-2">
-                        <PdfIcon className="w-5 h-5"/> {isSavingPdf ? '...' : 'PDF'}
+                    <button 
+                        onClick={handleSavePdf} 
+                        disabled={isSavingPdf} 
+                        className="px-6 py-2.5 bg-indigo-600 text-white font-black text-xs rounded-xl shadow-lg hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center gap-2"
+                    >
+                        {isSavingPdf ? <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin rounded-full"/> : <PdfIcon className="w-5 h-5"/>}
+                        {isSavingPdf ? 'Gerando...' : 'Baixar Escala'}
                     </button>
                 </div>
              </div>
@@ -120,6 +127,15 @@ const UserView: React.FC<UserViewProps> = ({ schedule, announcements, onMemberCl
                     <p>{announcements}</p>
                 </div>
             </div>
+        </div>
+
+        {/* Versão oculta para impressão em PDF */}
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+            <SchedulePDFView 
+                schedule={schedule} 
+                announcements={announcements} 
+                scheduleName={scheduleName} 
+            />
         </div>
     </div>
   );

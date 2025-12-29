@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Member, ScheduleParticipant } from '../types';
-import { CloseIcon } from './icons';
+import { CloseIcon, PlusIcon } from './icons';
 
 interface MultiSelectProps {
   label: string;
@@ -10,7 +11,7 @@ interface MultiSelectProps {
   placeholder?: string;
 }
 
-const MultiSelect: React.FC<MultiSelectProps> = ({ label, allOptions, selectedOptions, onChange, placeholder = "Buscar membros..." }) => {
+const MultiSelect: React.FC<MultiSelectProps> = ({ label, allOptions, selectedOptions, onChange, placeholder = "Buscar ou digitar nome..." }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -22,22 +23,21 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ label, allOptions, selectedOp
     }, [allOptions, selectedOptions]);
 
     const filteredOptions = useMemo(() => {
-        if (!searchTerm) {
-            return availableOptions;
-        }
+        if (!searchTerm) return availableOptions;
+        const lower = searchTerm.toLowerCase();
         return availableOptions.filter(option =>
-            option.name.toLowerCase().includes(searchTerm.toLowerCase())
+            option.name.toLowerCase().includes(lower)
         );
     }, [searchTerm, availableOptions]);
 
     const showAddOption = useMemo(() => {
-        if (!searchTerm.trim()) return false;
-        const searchLower = searchTerm.trim().toLowerCase();
-        // Check if there's an exact match in all members (registered) or already selected participants
-        const exactMatchExists = allOptions.some(opt => opt.name.toLowerCase() === searchLower) || selectedOptions.some(opt => opt.name.toLowerCase() === searchLower);
-        return !exactMatchExists;
+        const term = searchTerm.trim();
+        if (!term) return false;
+        const lower = term.toLowerCase();
+        const exactRegistered = allOptions.some(opt => opt.name.toLowerCase() === lower);
+        const exactSelected = selectedOptions.some(opt => opt.name.toLowerCase() === lower);
+        return !exactRegistered && !exactSelected;
     }, [searchTerm, allOptions, selectedOptions]);
-
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -46,10 +46,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ label, allOptions, selectedOp
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [wrapperRef]);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
     
     const handleSelect = (member: Member) => {
         const newParticipant: ScheduleParticipant = {
@@ -69,7 +67,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ label, allOptions, selectedOp
         if (!newName) return;
 
         const newParticipant: ScheduleParticipant = {
-            id: `unregistered_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            id: `ext_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
             name: newName,
             isRegistered: false,
         };
@@ -84,18 +82,17 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ label, allOptions, selectedOp
     };
 
     return (
-        <div ref={wrapperRef}>
-            <label className="block text-md font-semibold text-gray-700 dark:text-slate-300 mb-2">{label}</label>
+        <div ref={wrapperRef} className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">{label}</label>
             <div className="relative">
-                <div className="flex flex-wrap gap-2 items-center p-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 min-h-[42px]">
+                <div className="flex flex-wrap gap-2 items-center p-3 bg-zinc-50 dark:bg-church-black border border-zinc-200 dark:border-zinc-800 rounded-2xl min-h-[56px] focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
                     {selectedOptions.map(p => (
-                        <span key={p.id} className="flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900/70 text-indigo-800 dark:text-indigo-200 text-sm font-medium px-2.5 py-1 rounded-full">
+                        <span key={p.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white text-xs font-black uppercase border border-zinc-200 dark:border-zinc-700 shadow-sm animate-in zoom-in-95">
                             {p.name}
                             <button
                                 type="button"
                                 onClick={() => handleDeselect(p)}
-                                className="text-indigo-500 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-100 focus:outline-none"
-                                aria-label={`Remover ${p.name}`}
+                                className="p-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
                             >
                                 <CloseIcon className="w-3 h-3" />
                             </button>
@@ -105,51 +102,52 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ label, allOptions, selectedOp
                         ref={inputRef}
                         type="text"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {setSearchTerm(e.target.value); setIsOpen(true);}}
                         onFocus={() => setIsOpen(true)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' && showAddOption) {
+                            if (e.key === 'Enter' && searchTerm.trim()) {
                                 e.preventDefault();
-                                handleAddUnregistered();
+                                if (filteredOptions.length === 1 && filteredOptions[0].name.toLowerCase() === searchTerm.trim().toLowerCase()) {
+                                    handleSelect(filteredOptions[0]);
+                                } else if (showAddOption) {
+                                    handleAddUnregistered();
+                                }
                             }
                         }}
                         placeholder={selectedOptions.length === 0 ? placeholder : ''}
-                        className="flex-grow bg-transparent focus:outline-none text-sm p-1 dark:text-white"
-                        aria-label={label}
+                        className="flex-grow bg-transparent outline-none text-sm font-bold min-w-[120px] py-1 dark:text-white"
                     />
                 </div>
 
-                {isOpen && (
-                    <ul className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto" role="listbox">
-                        {filteredOptions.length > 0 &&
-                            filteredOptions.map(option => (
+                {isOpen && (searchTerm || filteredOptions.length > 0) && (
+                    <div className="absolute z-[160] w-full mt-2 bg-white dark:bg-church-surface border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                        <ul className="max-h-60 overflow-y-auto custom-scrollbar">
+                            {filteredOptions.map(option => (
                                 <li
                                     key={option.id}
                                     onClick={() => handleSelect(option)}
-                                    className="px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 cursor-pointer"
-                                    role="option"
-                                    aria-selected="false"
+                                    className="px-5 py-3.5 text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer flex items-center justify-between border-b border-zinc-50 dark:border-zinc-800/50 last:border-none"
                                 >
-                                    {option.name}
+                                    <span>{option.name}</span>
+                                    <span className="text-[9px] uppercase font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">Membro</span>
                                 </li>
-                            ))
-                        }
-                        {showAddOption && (
-                             <li
-                                onClick={handleAddUnregistered}
-                                className="px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 cursor-pointer font-semibold"
-                                role="option"
-                                aria-selected="false"
-                            >
-                                Adicionar "{searchTerm.trim()}"
-                            </li>
-                        )}
-                        {filteredOptions.length === 0 && !showAddOption && (
-                            <li className="px-4 py-2 text-sm text-gray-500 dark:text-slate-400 italic">
-                                {searchTerm ? 'Nenhum membro encontrado' : 'Todos os membros já selecionados'}
-                            </li>
-                        )}
-                    </ul>
+                            ))}
+                            {showAddOption && (
+                                <li
+                                    onClick={handleAddUnregistered}
+                                    className="px-5 py-4 text-sm font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-900/10 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer flex items-center gap-2"
+                                >
+                                    <PlusIcon className="w-4 h-4" />
+                                    <span>Adicionar "{searchTerm.trim()}"</span>
+                                </li>
+                            )}
+                            {filteredOptions.length === 0 && !showAddOption && searchTerm && (
+                                <li className="px-5 py-4 text-xs text-zinc-400 dark:text-zinc-500 italic text-center">
+                                    Nenhum resultado
+                                </li>
+                            )}
+                        </ul>
+                    </div>
                 )}
             </div>
         </div>

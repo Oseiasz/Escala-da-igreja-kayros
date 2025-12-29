@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BellIcon, AdminIcon, UserIcon, LogoutIcon, SearchIcon, CalendarIcon } from './icons';
+import { BellIcon, AdminIcon, UserIcon, LogoutIcon, CalendarIcon } from './icons';
 import { Schedule, Member, ScheduleGroup } from '../types';
 import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
@@ -18,16 +18,14 @@ interface HeaderProps {
   activeScheduleGroupId: string;
   onSetActiveScheduleGroupId: (id: string) => void;
   isCloudConnected?: boolean;
+  onAdminClick: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-    view, schedule, currentUser, onLogout, isAdmin, theme, onToggleTheme, onToggleSearch,
-    scheduleGroups, activeScheduleGroupId, onSetActiveScheduleGroupId, isCloudConnected = false
+    view, currentUser, onLogout, theme, onToggleTheme,
+    scheduleGroups, activeScheduleGroupId, onSetActiveScheduleGroupId, isCloudConnected = false,
+    onAdminClick
 }) => {
-    const handleNavigation = (hash: string) => {
-        window.location.hash = hash;
-    };
-  
   return (
     <header className="sticky top-0 z-50 bg-white/90 dark:bg-church-black/95 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 h-20 sm:h-24 flex items-center">
       <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
@@ -39,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({
                         <CalendarIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white dark:text-black" />
                     </div>
                     {isCloudConnected && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-church-black animate-pulse-fast shadow-sm" title="Sincronizado em tempo real"></div>
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-church-black animate-pulse-fast shadow-sm"></div>
                     )}
                 </div>
                 <h1 className="text-xl sm:text-2xl font-black text-black dark:text-white hidden lg:block tracking-tighter uppercase">Escala</h1>
@@ -56,7 +54,6 @@ const Header: React.FC<HeaderProps> = ({
                     {scheduleGroups.map(group => (
                         <option key={group.id} value={group.id}>{group.name}</option>
                     ))}
-                    {scheduleGroups.length === 0 && <option>Nenhuma Congregação</option>}
                 </select>
              </div>
           </div>
@@ -70,14 +67,14 @@ const Header: React.FC<HeaderProps> = ({
                         
                         <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-church-surface rounded-xl">
                             <button
-                                onClick={() => handleNavigation('#/')}
+                                onClick={() => { window.location.hash = '#/'; }}
                                 className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${view === 'user' ? 'bg-white dark:bg-church-zinc text-black dark:text-white shadow-sm' : 'text-zinc-500 hover:text-black'}`}
                             >
                                 <UserIcon className="w-3.5 h-3.5" />
                                 <span className="hidden sm:inline">Geral</span>
                             </button>
                             <button
-                                onClick={() => handleNavigation('#/admin')}
+                                onClick={onAdminClick}
                                 className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${view === 'admin' ? 'bg-white dark:bg-church-zinc text-black dark:text-white shadow-sm' : 'text-zinc-500 hover:text-black'}`}
                             >
                                 <AdminIcon className="w-3.5 h-3.5" />
@@ -85,9 +82,7 @@ const Header: React.FC<HeaderProps> = ({
                             </button>
                         </div>
                         
-                        <div className="flex items-center gap-3 cursor-pointer ml-2" onClick={() => handleNavigation('#/profile')}>
-                            <Avatar member={currentUser} className="w-10 h-10 border-2 border-zinc-100 dark:border-zinc-800" />
-                        </div>
+                        <Avatar member={currentUser} className="w-10 h-10 border-2 border-zinc-100 dark:border-zinc-800 ml-2" />
 
                         <button onClick={onLogout} className="p-2 text-zinc-400 hover:text-red-500 transition-all">
                             <LogoutIcon className="w-5 h-5" />

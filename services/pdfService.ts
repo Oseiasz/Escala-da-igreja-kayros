@@ -1,64 +1,70 @@
-declare const jspdf: any;
-declare const html2canvas: any;
 
+/**
+ * Exports a DOM element to a professional PDF file using window globals.
+ */
 export const exportScheduleToPDF = (elementId: string, fileName: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const element = document.getElementById(elementId);
-    if (!element) {
-      const error = new Error(`Element with id ${elementId} not found.`);
-      console.error(error);
-      return reject(error);
+    if (!element) return reject(new Error("Elemento PDF não encontrado."));
+
+    // @ts-ignore
+    const html2canvas = (window as any).html2canvas;
+    // @ts-ignore
+    const { jsPDF } = (window as any).jspdf || {};
+
+    if (!html2canvas || !jsPDF) {
+        return reject(new Error("Bibliotecas de PDF ausentes. Verifique a conexão."));
     }
 
-    html2canvas(element, {
-      scale: 2, // Higher scale for better quality
-      useCORS: true,
-      logging: false,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight,
-      backgroundColor: '#ffffff', // Explicitly set background
-    }).then((canvas: HTMLCanvasElement) => {
-      try {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jspdf.jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4',
-        });
-        
-        const margin = 10; // 10mm margin
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const contentWidth = pdfWidth - (margin * 2);
-        const pageContentHeight = pdfHeight - (margin * 2);
+    setTimeout(() => {
+        html2canvas(element, {
+            scale: 1.5, // Reduzido ligeiramente para maior compatibilidade de memória
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            windowWidth: 800,
+            onclone: (clonedDoc: Document) => {
+                const el = clonedDoc.getElementById(elementId);
+                if (el) {
+                    el.style.position = 'relative';
+                    el.style.left = '0';
+                    el.style.top = '0';
+                    el.style.visibility = 'visible';
+                    el.style.display = 'block';
+                }
+            }
+        }).then((canvas: HTMLCanvasElement) => {
+            try {
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4',
+                });
+                
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const imgProps = pdf.getImageProperties(imgData);
+                const totalHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-        const imgProps = pdf.getImageProperties(imgData);
-        const totalImgHeight = (imgProps.height * contentWidth) / imgProps.width;
+                let hLeft = totalHeight;
+                let pos = 0;
 
-        let heightLeft = totalImgHeight;
-        let position = margin;
+                pdf.addImage(imgData, 'JPEG', 0, pos, pdfWidth, totalHeight);
+                hLeft -= pdfHeight;
+                
+                while (hLeft > 0) {
+                    pos = hLeft - totalHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, pos, pdfWidth, totalHeight);
+                    hLeft -= pdfHeight;
+                }
 
-        // Add the image to the PDF, placing it at the top margin.
-        // The Y position will be negative on subsequent pages to "scroll" the image up.
-        pdf.addImage(imgData, 'PNG', margin, position, contentWidth, totalImgHeight);
-        heightLeft -= pageContentHeight;
-        
-        while (heightLeft > 0) {
-          position -= pageContentHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', margin, position, contentWidth, totalImgHeight);
-          heightLeft -= pageContentHeight;
-        }
-
-        pdf.save(fileName);
-        resolve();
-      } catch (error) {
-        console.error("Error generating PDF:", error);
-        reject(error);
-      }
-    }).catch(error => {
-        console.error("Error with html2canvas:", error);
-        reject(error);
-    });
+                pdf.save(fileName);
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        }).catch(reject);
+    }, 500);
   });
 };

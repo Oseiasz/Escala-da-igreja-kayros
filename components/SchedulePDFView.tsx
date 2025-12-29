@@ -10,30 +10,29 @@ interface SchedulePDFViewProps {
 
 const PDFParticipantList: React.FC<{ title: string; members: ScheduleParticipant[]; color: string }> = ({ title, members, color }) => {
     return (
-        <div style={{ flex: 1, minWidth: 0, paddingBottom: '4px' }}>
+        <div style={{ flex: 1, minWidth: 0, paddingBottom: '6px' }}>
             <h4 style={{ 
-                fontSize: '8px', 
+                fontSize: '7px', 
                 textTransform: 'uppercase', 
-                letterSpacing: '0.5px', 
-                color: '#64748b', // slate-500
-                marginBottom: '2px',
-                borderBottom: `1px solid ${color}40`, // Low opacity border
-                paddingBottom: '1px',
-                fontWeight: 'bold'
+                letterSpacing: '0.8px', 
+                color: '#475569', 
+                marginBottom: '3px',
+                fontWeight: '900',
+                borderBottom: `1.5px solid ${color}`
             }}>
                 {title}
             </h4>
-            {members && members.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                    {members.map(member => (
-                        <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <span style={{ fontSize: '9px', color: '#334155', fontWeight: 500 }}>• {member.name.split(' ').slice(0, 2).join(' ')}</span>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <span style={{ fontSize: '9px', color: '#94a3b8', fontStyle: 'italic' }}>-</span>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                {members && members.length > 0 ? (
+                    members.map(member => (
+                        <span key={member.id} style={{ fontSize: '10px', color: '#1e293b', fontWeight: 600 }}>
+                            {member.name}
+                        </span>
+                    ))
+                ) : (
+                    <span style={{ fontSize: '9px', color: '#94a3b8', fontStyle: 'italic' }}>Não definido</span>
+                )}
+            </div>
         </div>
     );
 };
@@ -50,152 +49,73 @@ const SchedulePDFView: React.FC<SchedulePDFViewProps> = ({ schedule, announcemen
 
   return (
     <div 
-      id="pdf-content" 
+      id="schedule-to-print-user-offscreen" 
       style={{ 
-        width: '794px', // Standard A4 width at 96dpi (approx)
-        minHeight: '1123px', // A4 height
-        padding: '30px 40px', 
-        fontFamily: 'Inter, Helvetica, Arial, sans-serif', 
+        width: '800px', 
+        padding: '40px 50px', 
+        fontFamily: 'Inter, system-ui, sans-serif', 
         backgroundColor: '#ffffff',
         boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
+        color: '#000000'
       }}
     >
-      {/* Header Minimalista */}
-      <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'flex-end', 
-          borderBottom: '2px solid #0f172a', // slate-900
-          paddingBottom: '15px',
-          marginBottom: '20px'
-      }}>
+      {/* Cabeçalho */}
+      <div style={{ borderBottom: '3px solid #000000', paddingBottom: '20px', marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-            <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
-                {scheduleName}
+            <h1 style={{ fontSize: '28px', fontWeight: '900', margin: 0, tracking: '-1px', textTransform: 'uppercase' }}>
+                Escala de Trabalho
             </h1>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0', fontWeight: 500 }}>
-                Escala Semanal de Trabalho
+            <p style={{ fontSize: '14px', fontWeight: '700', color: '#64748b', margin: '4px 0 0 0' }}>
+                {scheduleName}
             </p>
         </div>
         <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '10px', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '1px' }}>Gerado em</span>
-            <span style={{ fontSize: '12px', color: '#334155', fontWeight: 600 }}>{formattedDate}</span>
+            <div style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8' }}>Atualizado em</div>
+            <div style={{ fontSize: '14px', fontWeight: '700' }}>{formattedDate}</div>
         </div>
       </div>
 
-      {/* Grid de Dias - Layout 2 Colunas */}
-      <div style={{ 
-          display: 'flex', 
-          flexWrap: 'wrap', 
-          gap: '12px', 
-          alignContent: 'flex-start',
-          flex: 1 // Push footer down
-      }}>
+      {/* Grid de Escala */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
         {activeDays.map(day => (
-          <div key={day.id} style={{ 
-              width: 'calc(50% - 6px)', // 2 colunas com gap
-              border: '1px solid #e2e8f0', // slate-200
-              borderRadius: '6px',
-              backgroundColor: '#f8fafc', // slate-50
-              overflow: 'hidden',
-              pageBreakInside: 'avoid',
-              display: 'flex',
-              flexDirection: 'column'
-          }}>
-            {/* Card Header */}
-            <div style={{ 
-                padding: '6px 10px', 
-                borderBottom: '1px solid #e2e8f0',
-                backgroundColor: '#ffffff',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-            }}>
-                <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
-                    {day.dayName}
-                    {day.dateLabel && <span style={{ color: '#94a3b8', fontSize: '11px', marginLeft: '6px' }}>({day.dateLabel})</span>}
-                </h3>
-                <span style={{ fontSize: '10px', fontWeight: '600', color: '#4f46e5', backgroundColor: '#eef2ff', padding: '2px 6px', borderRadius: '4px' }}>
+          <div key={day.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '15px', backgroundColor: '#fcfcfc' }}>
+            <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '900', margin: 0 }}>{day.dayName}</h3>
+                    {day.dateLabel && <p style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', margin: 0 }}>{day.dateLabel}</p>}
+                </div>
+                <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '4px 8px', borderRadius: '6px', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}>
                     {day.event}
-                </span>
+                </div>
             </div>
 
-            {/* Card Body - Grid 2x2 Layout for Roles */}
-            <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                
-                {/* Top Row: Dirigente & Pregador */}
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <PDFParticipantList 
-                        title="Dirigente" 
-                        members={day.worshipLeaders || []} 
-                        color="#a855f7" // purple
-                    />
-                     <div style={{ width: '1px', backgroundColor: '#e2e8f0' }}></div>
-                    <PDFParticipantList 
-                        title="Pregador(a)" 
-                        members={day.preachers || []} 
-                        color="#f97316" // orange
-                    />
-                </div>
-
-                <div style={{ height: '1px', backgroundColor: '#e2e8f0' }}></div>
-
-                {/* Bottom Row: Porteiros & Cantores */}
-                <div style={{ display: 'flex', gap: '10px' }}>
-                   <PDFParticipantList 
-                        title="Porteiros" 
-                        members={day.doorkeepers} 
-                        color="#3b82f6" // blue
-                   />
-                   <div style={{ width: '1px', backgroundColor: '#e2e8f0' }}></div>
-                   <PDFParticipantList 
-                        title="Cantores" 
-                        members={day.hymnSingers} 
-                        color="#22c55e" // green
-                   />
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <PDFParticipantList title="Dirigente" members={day.worshipLeaders} color="#8b5cf6" />
+                <PDFParticipantList title="Pregador" members={day.preachers} color="#f59e0b" />
+                <PDFParticipantList title="Portaria" members={day.doorkeepers} color="#3b82f6" />
+                <PDFParticipantList title="Louvor" members={day.hymnSingers} color="#10b981" />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Avisos - Rodapé Fixo ou ao final */}
+      {/* Comunicados */}
       {announcements && (
-        <div style={{ marginTop: 'auto', paddingTop: '15px', pageBreakInside: 'avoid' }}>
-            <div style={{ 
-                backgroundColor: '#fffbeb', // amber-50
-                border: '1px solid #fcd34d', // amber-300
-                borderRadius: '6px',
-                padding: '12px',
-                position: 'relative'
-            }}>
-                <h3 style={{ 
-                    fontSize: '10px', 
-                    textTransform: 'uppercase', 
-                    fontWeight: 'bold', 
-                    color: '#b45309', // amber-700
-                    margin: '0 0 6px 0',
-                    letterSpacing: '0.5px'
-                }}>
-                    Quadro de Avisos
-                </h3>
-                <div style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    color: '#451a03', // amber-950
-                    fontSize: '10px',
-                    lineHeight: '1.4'
-                }}>
-                    {announcements}
-                </div>
+        <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+            <h3 style={{ fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', color: '#475569', marginBottom: '10px', letterSpacing: '1px' }}>
+                Informativos e Avisos
+            </h3>
+            <div style={{ fontSize: '12px', lineHeight: '1.6', fontWeight: '500', color: '#334155', whiteSpace: 'pre-wrap' }}>
+                {announcements}
             </div>
         </div>
       )}
-      
-      {/* Footer Branding */}
-      <div style={{ marginTop: '10px', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
-           <p style={{ fontSize: '9px', color: '#cbd5e1' }}>Escala da Igreja</p>
+
+      {/* Rodapé */}
+      <div style={{ marginTop: '40px', borderTop: '1px solid #e2e8f0', paddingTop: '15px', textAlign: 'center' }}>
+        <p style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase' }}>
+            "Servi ao Senhor com alegria"
+        </p>
       </div>
     </div>
   );
