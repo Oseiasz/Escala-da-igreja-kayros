@@ -2,21 +2,52 @@
 import { createClient } from '@supabase/supabase-js';
 import { Member, ScheduleGroup, User } from '../types';
 
+/**
+ * CONFIGURAÇÃO DO SUPABASE
+ * URL: Confirmada pelo usuário
+ * Key: Confirmada pelo usuário
+ */
 const SUPABASE_URL = 'https://wknhbafewjdbexmldjqa.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrbmhiYWZld2pkYmV4bWxkanFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5NjM3ODUsImV4cCI6MjA4MjUzOTc4NX0.UZgl2KzjxSxPHbG47A6oDfx7MTqHnr29hp3B5Ggx2sQ';
+const SUPABASE_ANON_KEY = 'sb_publishable_jRFBxNjci-cxESFJX9Secg_tR_vgkSN';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const TABLE_NAME = 'church_storage';
 
+/**
+ * 🚀 COMANDO SQL PARA O SUPABASE (SQL EDITOR):
+ * 
+ * Copie e cole o código abaixo no SQL Editor do seu projeto para que o app funcione:
+ * 
+ * -- 1. Criar a tabela principal
+ * CREATE TABLE IF NOT EXISTS public.church_storage (
+ *     key text PRIMARY KEY,
+ *     data jsonb NOT NULL,
+ *     updated_at timestamptz DEFAULT now()
+ * );
+ * 
+ * -- 2. Habilitar o Row Level Security (RLS)
+ * ALTER TABLE public.church_storage ENABLE ROW LEVEL SECURITY;
+ * 
+ * -- 3. Criar a política de acesso (Permitir tudo para a chave pública)
+ * CREATE POLICY "Permitir acesso total público" 
+ * ON public.church_storage 
+ * FOR ALL 
+ * USING (true) 
+ * WITH CHECK (true);
+ * 
+ * -- 4. Habilitar o Realtime para sincronização instantânea
+ * ALTER PUBLICATION supabase_realtime ADD TABLE public.church_storage;
+ */
+
 const LOCAL_KEYS = {
-  config: 'church_backup_config_v11',
-  members: 'church_backup_members_v11',
-  users: 'church_backup_users_v11'
+  config: 'church_backup_config_v15',
+  members: 'church_backup_members_v15',
+  users: 'church_backup_users_v15'
 };
 
 export const DatabaseService = {
   saveData: async (key: string, data: any) => {
-    // Salva localmente primeiro para garantir funcionamento offline
+    // Local-First: Garante que os dados existam no dispositivo mesmo sem internet ou sem tabela pronta
     localStorage.setItem(LOCAL_KEYS[key as keyof typeof LOCAL_KEYS] || `church_backup_${key}`, JSON.stringify(data));
 
     try {
@@ -29,10 +60,7 @@ export const DatabaseService = {
         }, { onConflict: 'key' });
       
       if (error) {
-        // Log discreto do erro de tabela, mas não interrompe o app
-        if (error.code !== 'PGRST116') {
-            console.debug(`DatabaseService: Persistência Cloud limitada para ${key}. Verifique a tabela '${TABLE_NAME}'.`);
-        }
+        console.warn(`[Supabase Sync] Sincronização falhou para '${key}'. Verifique se a tabela '${TABLE_NAME}' existe.`);
         return false;
       }
       return true;
